@@ -1,0 +1,15 @@
+services:
+  fastapi-app:
+    container_name: fastapi_app
+    restart: always
+    networks:
+      - web_network
+    volumes:
+      - /sessions:/app/sessions
+    ports:
+      - "8001:8001"
+
+networks:
+  web_network:
+    external: true
+    name: web_network

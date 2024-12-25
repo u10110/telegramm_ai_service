@@ -1,0 +1,15 @@
+[0;1;32m●[0m uvicorn.service - Uvicorn ASGI Server
+     Loaded: loaded (/etc/systemd/system/uvicorn.service; enabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Wed 2024-12-11 15:40:42 MSK; 2s ago
+   Main PID: 29715 (python3)
+      Tasks: 1 (limit: 2325)
+     Memory: 50.2M
+        CPU: 848ms
+     CGroup: /system.slice/uvicorn.service
+             └─29715 /usr/bin/python3 -m uvicorn main:app --host 0.0.0.0 --port 8000
+
+Dec 11 15:40:42 cv4333751.novalocal systemd[1]: Started Uvicorn ASGI Server.
+Dec 11 15:40:43 cv4333751.novalocal python3[29715]: INFO:     Started server process [29715]
+Dec 11 15:40:43 cv4333751.novalocal python3[29715]: INFO:     Waiting for application startup.
+Dec 11 15:40:43 cv4333751.novalocal python3[29715]: INFO:     Application startup complete.
+Dec 11 15:40:43 cv4333751.novalocal python3[29715]: INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
