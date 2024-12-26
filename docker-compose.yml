@@ -1,13 +1,15 @@
 services:
-  fastapi-app:
-    container_name: fastapi_app
-    restart: always
+  telegramm_ai_service:
+    image: registry.mplab.io/telegramm_ai_service:latest
     networks:
       - web_network
+    container_name: telegramm_ai_service
+    restart: always
     volumes:
       - /sessions:/app/sessions
     ports:
-      - "8001:8001"
+      - 8088:8089
+
 
 networks:
   web_network:

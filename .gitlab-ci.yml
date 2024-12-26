@@ -1,0 +1,46 @@
+stages:
+  - build
+  - deploy
+
+#variables:
+#  COMPOSE_DOCKER_CLI_BUILD: 1
+#  DOCKER_BUILDKIT: 1
+
+before_script:
+  - docker login -u $NEXUS_REGISTRY_USER -p $NEXUS_REGISTRY_PASSWD registry.mplab.io
+
+build:
+  #allow_failure: true
+  stage: build
+  image:
+    name: docker:stable
+    entrypoint: ["/bin/sh", "-c"]
+  tags:
+    - app-ea
+  only:
+    - main
+  variables:
+    CONTAINER_IMAGE: registry.mplab.io/telegramm_ai_service:${CI_COMMIT_SHORT_SHA}
+    CONTAINER_IMAGE_LATEST: registry.mplab.io/telegramm_ai_service:latest
+  script:
+    - docker build -f Dockerfile -t ${CONTAINER_IMAGE} .
+    - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_LATEST}
+    - docker push ${CONTAINER_IMAGE_LATEST}
+
+deploy:
+  stage: deploy
+  image:
+    name: docker:latest
+    entrypoint: ["/bin/sh", "-c"]
+  only:
+    - main
+  tags:
+    - app-ea
+  variables:
+    CONTAINER_IMAGE_DEVTEST: registry.mplab.io/telegramm_ai_service:latest
+  before_script:
+    - docker login -u $NEXUS_REGISTRY_USER -p $NEXUS_REGISTRY_PASSWD registry.mplab.io
+  script:
+    - docker compose -f docker-compose.yaml -p telegramm_ai_service down --timeout 10
+    - docker compose -f docker-compose.yaml -p telegramm_ai_service up -d
+    - docker image prune -a -f
