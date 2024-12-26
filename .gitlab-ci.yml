@@ -9,7 +9,7 @@ stages:
 before_script:
   - docker login -u $NEXUS_REGISTRY_USER -p $NEXUS_REGISTRY_PASSWD registry.mplab.io
 
-build:
+build:telegramm_service:
   #allow_failure: true
   stage: build
   image:
@@ -22,6 +22,24 @@ build:
   variables:
     CONTAINER_IMAGE: registry.mplab.io/telegramm_ai_service:${CI_COMMIT_SHORT_SHA}
     CONTAINER_IMAGE_LATEST: registry.mplab.io/telegramm_ai_service:latest
+  script:
+    - docker build -f Dockerfile -t ${CONTAINER_IMAGE} .
+    - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_LATEST}
+    - docker push ${CONTAINER_IMAGE_LATEST}
+
+build:telegramm_send_messages:
+  #allow_failure: true
+  stage: build
+  image:
+    name: docker:stable
+    entrypoint: [ "/bin/sh", "-c" ]
+  tags:
+    - app-ea
+  only:
+    - main
+  variables:
+    CONTAINER_IMAGE: registry.mplab.io/telegramm_send_messages:${CI_COMMIT_SHORT_SHA}
+    CONTAINER_IMAGE_LATEST: registry.mplab.io/telegramm_send_messages:latest
   script:
     - docker build -f Dockerfile -t ${CONTAINER_IMAGE} .
     - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_LATEST}

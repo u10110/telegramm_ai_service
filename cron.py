@@ -3,8 +3,8 @@ import time
 import subprocess
 
 # Пути к исполняемым файлам
-script_path_prsr = "prsr.py"
-script_path_sndr = "sndr.py"
+script_path_prsr = "telethon_send_messages/prsr.py"
+script_path_sndr = "telethon_send_messages/sndr.py"
 
 # Проверяем, существуют ли файлы
 if not os.path.exists(script_path_prsr):

@@ -9,6 +9,13 @@ services:
       - /sessions:/app/sessions
     ports:
       - 8088:8089
+  telegramm_send_messages:
+    image: registry.mplab.io/telethon_send_messages:latest
+    networks:
+        - web_network
+    container_name: telegramm_ai_service
+    restart: always
+
 
 
 networks:
