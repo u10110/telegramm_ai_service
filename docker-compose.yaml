@@ -1,8 +1,6 @@
 services:
   telegramm_ai_service:
     image: registry.mplab.io/telegramm_ai_service:latest
-    networks:
-      - web_network
     container_name: telegramm_ai_service
     restart: always
     volumes:
@@ -11,7 +9,5 @@ services:
       - 8088:8089
   telegramm_send_messages:
     image: registry.mplab.io/telegramm_send_messages:latest
-    networks:
-        - web_network
     container_name: telegramm_send_messages
     restart: always
