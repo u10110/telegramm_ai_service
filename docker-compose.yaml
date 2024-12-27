@@ -15,10 +15,3 @@ services:
         - web_network
     container_name: telegramm_send_messages
     restart: always
-
-
-
-networks:
-  web_network:
-    external: true
-    name: web_network
