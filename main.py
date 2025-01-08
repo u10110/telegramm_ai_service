@@ -193,8 +193,9 @@ async def get_all_messages(client, channel_id, limit):
         print(f"Ошибка при получении сообщений: {e}")
         raise
 
-
-
+@app.get("/health/")
+async def health():
+    return {"heath": 'Ok'}
 
 
 @app.post("/get-messages/")
