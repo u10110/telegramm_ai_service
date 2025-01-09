@@ -25,4 +25,22 @@ build:telegramm_ai_service:
   script:
     - docker build -f Dockerfile -t ${CONTAINER_IMAGE} .
     - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_LATEST}
-    #- docker push ${CONTAINER_IMAGE_LATEST}
+    # - docker push ${CONTAINER_IMAGE_LATEST}
+
+deploy:
+  stage: deploy
+  image:
+    name: docker:latest
+    entrypoint: ["/bin/sh", "-c"]
+  only:
+    - main
+  tags:
+    - regru_telegram
+  variables:
+    CONTAINER_IMAGE_DEVTEST: registry.mplab.io/telegramm_ai_service:latest
+  # before_script:
+  #   - docker login -u $NEXUS_REGISTRY_USER -p $NEXUS_REGISTRY_PASSWD registry.mplab.io
+  script:
+    - docker compose -f docker-compose.yaml -p telegramm_ai_service down --timeout 10
+    - docker compose -f docker-compose.yaml -p telegramm_ai_service up -d
+    - docker image prune -a -f
