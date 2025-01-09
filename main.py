@@ -16,10 +16,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-API_ID = '858408'
-API_HASH = 'c42722e7a3d3896caf40e74a1c4ecba9'
+API_ID = '21275822'
+API_HASH = '300cc403b6ad13139d9e16d8dca9ea4e'
 SESSION_DIR = os.path.join(os.getcwd(), 'sessions')
-print(SESSION_DIR)
 os.makedirs(SESSION_DIR, exist_ok=True)
 
 # Временное хранилище phone_code_hash для каждого номера
