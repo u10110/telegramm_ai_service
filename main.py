@@ -184,6 +184,8 @@ async def get_all_messages(client, channel_id, limit):
                 "date": message.date.isoformat(),
                 "text": message.message,
                 "user_id": user_id,
+                "from_id": message.to_id,
+                "to_id": message.from_id,
                 "username": f"@{username}" if username else None
             })
 
