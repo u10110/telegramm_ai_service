@@ -162,12 +162,12 @@ async def get_all_messages(client, channel_id, limit):
             username = None
 
             if message.from_id and isinstance(message.from_id, PeerUser):
-                user_id = message.from_id.user_id
+                user_id = message.to_id.user_id
                 try:
                     sender = await client.get_entity(user_id)
                     username = getattr(sender, 'username', None)
                 except Exception as e:
-                    print(f"Ошибка при получении отправителя: {e}")
+                    print(f"Ошибка при получении username: {e}")
 
             if not user_id and message.sender_id:
                 try:
@@ -175,7 +175,7 @@ async def get_all_messages(client, channel_id, limit):
                     user_id = sender.id
                     username = getattr(sender, 'username', None)
                 except Exception as e:
-                    print(f"Ошибка при получении отправителя через sender_id: {e}")
+                    print(f"Ошибка при получении username через sender_id: {e}")
 
             print(f"Message ID: {message.id}, Date: {message.date}, Text: {message.message}, User ID: {user_id}, Username: @{username if username else 'None'}")
 
