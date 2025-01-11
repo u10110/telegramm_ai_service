@@ -55,6 +55,7 @@ async def startup_event():
     for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
         for filename in filenames:
             session_name = filename.split('.')[0]
+            print(session_name)
             await start_client(session_name)
 
 
