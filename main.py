@@ -33,20 +33,8 @@ def print_event(sc):
 
 
 def start_client(session_name):
-    client = TelegramClient(session_name, API_ID, API_HASH)
-    client.start()
-    logger.info('Клиент Telegram подключён ', {session_name})
-
-
-@app.on_event("startup")
-async def startup_event():
-    for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
-        for filename in filenames:
-            await start_client(filename)
-
-
-async def start_client(session_name):
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    session_file = os.path.join(SESSION_DIR, session_name)
+    client = TelegramClient(session_file, API_ID, API_HASH)
 
     @client.on(events.NewMessage)
     async def my_event_handler(event):
@@ -58,6 +46,14 @@ async def start_client(session_name):
     client.run_until_disconnected()
 
     running_clients.append((session_name, client))
+    logger.info('Клиент Telegram подключён ', {session_name})
+
+
+@app.on_event("startup")
+async def startup_event():
+    for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
+        for filename in filenames:
+            await start_client(filename)
 
 
 async def get_or_start_client(session_name):
@@ -116,8 +112,8 @@ async def verify_code(data: VerifyCodeRequest):
     code = data.code
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
-    client = TelegramClient(session_name, API_ID, API_HASH)
+
+    client = TelegramClient("session_" + phone, API_ID, API_HASH)
 
     try:
         print(f"phone_hash_store {phone_hash_store}")
