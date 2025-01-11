@@ -46,7 +46,7 @@ async def start_client(session_name):
     client.run_until_disconnected()
 
     running_clients.append((session_name, client))
-    logger.info(f"Клиент Telegram подключён: {session_name}")
+    logger.info(f"Клиент Telegram started: {session_name}")
 
 
 @app.on_event("startup")
@@ -70,7 +70,6 @@ async def send_code(phone: str):
     phone = phone.strip().replace("+", "")
     logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
     session_name = "session_" + phone
-    os.path.join(SESSION_DIR, session_name)
 
     # Если файл сессии существует, удаляем его
     if os.path.exists(session_name + ".session"):
@@ -143,7 +142,7 @@ async def get_users(phone: str):
     Получает список всех пользователей, с которыми велась переписка.
     """
     phone = phone.strip().replace("+", "")
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
+    session_name = "session_" + phone
     print(f"session_name {session_name}")
 
     client = await get_or_start_client(session_name)
