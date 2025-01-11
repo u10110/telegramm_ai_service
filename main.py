@@ -43,8 +43,9 @@ async def start_client(session_name):
         #    await event.reply('hi!')
 
     await client.start()
-    await client.run_until_disconnected()
     await client.connect()
+    client.run_until_disconnected()
+
     running_clients.append((session_name, client))
     logger.info(f"Клиент Telegram подключён: {session_name}")
 
