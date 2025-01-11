@@ -38,7 +38,7 @@ async def start_client(session_name):
 
     @client.on(events.NewMessage)
     async def my_event_handler(event):
-        logger.info(f"Message peceiver: {event.raw_text}")
+        logger.info(f"Message peceiver: {session_name} {event.raw_text}")
         #if 'hello' in event.raw_text:
         #    await event.reply('hi!')
 
