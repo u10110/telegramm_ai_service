@@ -1,12 +1,12 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from telethon import TelegramClient
+from telethon import TelegramClient, events
 import os
 import logging
 from telethon.tl.types import PeerUser, User
 from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
-
+from os import walk
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -24,11 +24,56 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 # Временное хранилище phone_code_hash для каждого номера
 phone_hash_store = {}
 
+running_clients = []
+
+
+def print_event(sc):
+    print("Hello")
+    sc.enter(5, 1, print_event, (sc,))
+
+
+def start_client(session_name):
+    client = TelegramClient(session_name, API_ID, API_HASH)
+    client.start()
+    logger.info('Клиент Telegram подключён ', {session_name})
+
+
+@app.on_event("startup")
+async def startup_event():
+    for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
+        for filename in filenames:
+            await start_client(filename)
+
+
+async def start_client(session_name):
+    client = TelegramClient(session_name, API_ID, API_HASH)
+
+    @client.on(events.NewMessage)
+    async def my_event_handler(event):
+        print(event.raw_text)
+        #if 'hello' in event.raw_text:
+        #    await event.reply('hi!')
+
+    client.start()
+    client.run_until_disconnected()
+
+    running_clients.append((session_name, client))
+
+
+async def get_or_start_client(session_name):
+    clients_dict = dict(running_clients)
+    if clients_dict[session_name] is not None:
+        return clients_dict[session_name]
+    clients_dict[session_name] = await start_client(session_name)
+    return clients_dict[session_name]
+
+
 @app.post("/send-code/")
 async def send_code(phone: str):
     phone = phone.strip().replace("+", "")
     logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
+    session_name = "session_" + phone
+    os.path.join(SESSION_DIR, session_name)
 
     # Если файл сессии существует, удаляем его
     if os.path.exists(session_name + ".session"):
@@ -101,12 +146,10 @@ async def get_users(phone: str):
     Получает список всех пользователей, с которыми велась переписка.
     """
     phone = phone.strip().replace("+", "")
-    print(111111111111)
-    print(phone)
     session_name = os.path.join(SESSION_DIR, "session_" + phone)
     print(f"session_name {session_name}")
-    client = TelegramClient(session_name, API_ID, API_HASH)
-    print(client)
+
+    client = await get_or_start_client(session_name)
 
     try:
         await client.connect()
@@ -206,7 +249,8 @@ async def get_messages(data: GetMessagesRequest):
     """
     phone = data.phone.strip().replace("+", "")
     session_name = os.path.join(SESSION_DIR, "session_" + phone)
-    client = TelegramClient(session_name, API_ID, API_HASH)
+
+    client = await get_or_start_client(session_name)
 
     try:
         # Подключаем клиента
@@ -251,7 +295,8 @@ async def send_message(data: SendMessageRequest):
     """
     sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
     session_name = os.path.join(SESSION_DIR, "session_" + sender_phone)
-    client = TelegramClient(session_name, API_ID, API_HASH)
+
+    client = await get_or_start_client(session_name)
 
     try:
         await client.connect()
@@ -276,3 +321,5 @@ async def send_message(data: SendMessageRequest):
     finally:
         await client.disconnect()
         logger.info(f"Клиент Telegram {sender_phone} отключён")
+
+
