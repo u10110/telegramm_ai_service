@@ -53,6 +53,7 @@ async def start_client(session_name):
 async def startup_event():
     for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
         for filename in filenames:
+            print(filename)
             await start_client(filename)
 
 
