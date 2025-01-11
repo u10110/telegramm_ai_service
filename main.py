@@ -38,7 +38,7 @@ async def start_client(session_name):
 
     @client.on(events.NewMessage)
     async def my_event_handler(event):
-        print(event.raw_text)
+        logger.info(f"Message peceiver: {event.raw_text}")
         #if 'hello' in event.raw_text:
         #    await event.reply('hi!')
 
@@ -237,10 +237,6 @@ async def get_messages(data: GetMessagesRequest):
     client = await get_or_start_client(session_name)
 
     try:
-        # Подключаем клиента
-        await client.connect()
-        logger.info("Клиент Telegram подключён")
-
         # ID канала или пользователя
         channel_id = data.user_id
 
@@ -251,9 +247,6 @@ async def get_messages(data: GetMessagesRequest):
     except Exception as e:
         logger.error(f"Ошибка при получении сообщений: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await client.disconnect()
-        logger.info("Клиент Telegram отключён")
 
 
 class SendMessageRequest(BaseModel):
@@ -278,13 +271,12 @@ async def send_message(data: SendMessageRequest):
     - `data.message`: Сообщение.
     """
     sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
-    session_name = os.path.join(SESSION_DIR, "session_" + sender_phone)
+    session_name = "session_" + sender_phone
 
     client = await get_or_start_client(session_name)
 
     try:
-        await client.connect()
-        logger.info(f"Клиент Telegram подключён с аккаунта: {sender_phone}")
+
 
         # Определяем сущность пользователя по username
         try:
