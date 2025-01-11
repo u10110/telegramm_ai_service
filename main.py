@@ -32,7 +32,7 @@ def print_event(sc):
     sc.enter(5, 1, print_event, (sc,))
 
 
-def start_client(session_name):
+async def start_client(session_name):
     session_file = os.path.join(SESSION_DIR, session_name)
     client = TelegramClient(session_file, API_ID, API_HASH)
 
