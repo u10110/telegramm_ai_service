@@ -46,7 +46,7 @@ def start_client(session_name):
     client.run_until_disconnected()
 
     running_clients.append((session_name, client))
-    logger.info('Клиент Telegram подключён ', {session_name})
+    logger.info('Клиент Telegram подключён ', session_name)
 
 
 @app.on_event("startup")
