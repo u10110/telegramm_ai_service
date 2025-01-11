@@ -42,11 +42,11 @@ async def start_client(session_name):
         #if 'hello' in event.raw_text:
         #    await event.reply('hi!')
 
-    client.start()
-    client.run_until_disconnected()
-
+    await client.start()
+    await client.run_until_disconnected()
+    await client.connect()
     running_clients.append((session_name, client))
-    logger.info(f"Клиент Telegram started: {session_name}")
+    logger.info(f"Клиент Telegram подключён: {session_name}")
 
 
 @app.on_event("startup")
@@ -83,7 +83,6 @@ async def send_code(phone: str):
     client = TelegramClient(session_name, API_ID, API_HASH)
 
     try:
-        await client.connect()
         logger.info("Клиент Telegram подключён")
         if not await client.is_user_authorized():
             result = await client.send_code_request(phone)
@@ -96,9 +95,6 @@ async def send_code(phone: str):
     except Exception as e:
         logger.error(f"Ошибка при отправке кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await client.disconnect()
-        logger.info("Клиент Telegram отключён")
 
 
 class VerifyCodeRequest(BaseModel):
@@ -122,8 +118,6 @@ async def verify_code(data: VerifyCodeRequest):
         if not phone_code_hash:
             raise HTTPException(status_code=400, detail="Код не был отправлен или истёк")
 
-        await client.connect()
-        logger.info("Клиент Telegram подключён")
         await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
         logger.info(f"Код подтверждён для телефона: {phone}")
 
@@ -132,9 +126,7 @@ async def verify_code(data: VerifyCodeRequest):
     except Exception as e:
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await client.disconnect()
-        logger.info("Клиент Telegram отключён")
+
 
 @app.get("/get-users/")
 async def get_users(phone: str):
@@ -148,8 +140,6 @@ async def get_users(phone: str):
     client = await get_or_start_client(session_name)
 
     try:
-        await client.connect()
-        logger.info("Клиент Telegram подключён")
 
         dialogs = await client.get_dialogs()
         for dialog in dialogs:
@@ -164,9 +154,7 @@ async def get_users(phone: str):
     except Exception as e:
         logger.error(f"Ошибка при получении списка пользователей: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        await client.disconnect()
-        logger.info("Клиент Telegram отключён")
+
 
 class GetMessagesRequest(BaseModel):
     phone: str
