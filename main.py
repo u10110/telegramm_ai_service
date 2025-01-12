@@ -56,18 +56,22 @@ async def start_client(session_name):
         #    logger.error(e)
         #    pass
 
-        payload = {
-            "id": event.id,
-            "date": event.date,
-            #"username": event.username,
-            "channel": event.message.peer_id,
-            "via_bot_id": event.via_bot_id,
-            "message": event.raw_text,
-            "to_id": event.to_id,
-            "from_id": event.from_id
-        }
+        user_data = get_user_id_and_name_from_message(client, event.message)
 
         try:
+            payload = {
+                "id": event.id,
+                "date": event.date,
+                "username": user_data.username,
+                "channel": event.message.peer_id,
+                "via_bot_id": event.via_bot_id,
+                "message": event.raw_text,
+                "to_id": event.to_id,
+                "from_id": event.from_id,
+                "user_id": user_data.user_id,
+                "channel_phone": session_name.split('_')[1]
+            }
+
             response = requests.post(
                 f"{APP_HOST}/chat/new-message-event/",
                 json=payload,
@@ -222,24 +226,11 @@ async def get_all_messages(client, channel_id, limit):
 
         all_messages = []
         for message in history.messages:
-            user_id = None
-            username = None
 
-            if message.from_id and isinstance(message.from_id, PeerUser):
-                user_id = message.to_id.user_id
-                try:
-                    sender = await client.get_entity(user_id)
-                    username = getattr(sender, 'username', None)
-                except Exception as e:
-                    print(f"Ошибка при получении username: {e}")
+            user_data = get_user_id_and_name_from_message(client, message)
 
-            if not user_id and message.sender_id:
-                try:
-                    sender = await client.get_entity(message.sender_id)
-                    user_id = sender.id
-                    username = getattr(sender, 'username', None)
-                except Exception as e:
-                    print(f"Ошибка при получении username через sender_id: {e}")
+            user_id = user_data.user_id
+            username = user_data.username
 
             print(f"Message ID: {message.id}, Date: {message.date}, Text: {message.message}, User ID: {user_id}, Username: @{username if username else 'None'}")
 
@@ -257,6 +248,29 @@ async def get_all_messages(client, channel_id, limit):
     except Exception as e:
         print(f"Ошибка при получении сообщений: {e}")
         raise
+
+
+async def get_user_id_and_name_from_message(client, message):
+    user_id = None
+    username = None
+    if message.from_id and isinstance(message.from_id, PeerUser):
+        user_id = message.to_id.user_id
+        try:
+            sender = await client.get_entity(user_id)
+            username = getattr(sender, 'username', None)
+        except Exception as e:
+            print(f"Ошибка при получении username: {e}")
+
+    if not user_id and message.sender_id:
+        try:
+            sender = await client.get_entity(message.sender_id)
+            user_id = sender.id
+            username = getattr(sender, 'username', None)
+        except Exception as e:
+            print(f"Ошибка при получении username через sender_id: {e}")
+
+    return (user_id, username)
+
 
 @app.get("/health/")
 async def health():
