@@ -57,7 +57,8 @@ async def start_client(session_name):
         #    pass
 
         payload = {
-            "event": event,
+            "user_id": event.user_id,
+            "via_bot_id": event.via_bot_id,
             "message": event.raw_text
         }
 
