@@ -63,7 +63,7 @@ async def start_client(session_name):
                 "id": event.id,
                 "date": event.date.isoformat(),
                 "username": user_data['username'],
-                "channel": event.message.peer_id,
+               # "channel": event.message.peer_id,
                 "via_bot_id": event.via_bot_id,
                 "message": event.raw_text,
                 "to_id": {"user_id": event.to_id.user_id},
