@@ -61,7 +61,7 @@ async def start_client(session_name):
         try:
             payload = {
                 "id": event.id,
-                "date": event.date,
+                "date": event.date.isoformat(),
                 "username": user_data['username'],
                 "channel": event.message.peer_id,
                 "via_bot_id": event.via_bot_id,
