@@ -7,7 +7,7 @@ from telethon.tl.types import PeerUser, User
 from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
-
+import requests
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
@@ -32,12 +32,9 @@ phone_hash_store = {}
 
 running_clients = []
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-logger.info(KAFKA_BOOTSTRAP_SERVERS)
-producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS])
+APP_HOST = os.getenv("APP_HOST")
 
-def print_event(sc):
-    print("Hello")
-    sc.enter(5, 1, print_event, (sc,))
+#producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS])
 
 
 async def start_client(session_name):
@@ -48,19 +45,33 @@ async def start_client(session_name):
     async def my_event_handler(event):
         await client.connect()
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
-        future = producer.send('telethon-events', b'raw_bytes')
+        print(event)
+        #future = producer.send('telethon-events', b'raw_bytes')
 
         # Block for 'synchronous' sends
-        try:
-            record_metadata = future.get(timeout=10)
-        except KafkaError as e:
-            # Decide what to do if produce request failed...
-            logger.error(e)
-            pass
+        #try:
+        #    record_metadata = future.get(timeout=10)
+        #except KafkaError as e:
+        #    # Decide what to do if produce request failed...
+        #    logger.error(e)
+        #    pass
 
-        print (record_metadata.topic)
-        print (record_metadata.partition)
-        print (record_metadata.offset)
+        payload = {
+            "event": event,
+            "message": event.raw_text
+        }
+
+        try:
+            response = requests.post(
+                f"{APP_HOST}/chat/new-message-event/",
+                json=payload,
+                headers={"Content-Type": "application/json"}
+            )
+            return response.status_code == 200
+        except Exception as e:
+            print(f"New message event sent  error: {e}")
+            return False
+
 
     await client.connect()
     #client.run_until_disconnected()
