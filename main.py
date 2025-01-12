@@ -8,6 +8,9 @@ from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
 
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -27,6 +30,8 @@ phone_hash_store = {}
 running_clients = []
 
 
+producer = KafkaProducer(bootstrap_servers=['broker1:1234'])
+
 def print_event(sc):
     print("Hello")
     sc.enter(5, 1, print_event, (sc,))
@@ -38,9 +43,21 @@ async def start_client(session_name):
 
     @client.on(events.NewMessage)
     async def my_event_handler(event):
+        await client.connect()
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
-        #if 'hello' in event.raw_text:
-        #    await event.reply('hi!')
+        future = producer.send('telethon-events', b'raw_bytes')
+
+        # Block for 'synchronous' sends
+        try:
+            record_metadata = future.get(timeout=10)
+        except KafkaError as e:
+            # Decide what to do if produce request failed...
+            logger.error(e)
+            pass
+
+        print (record_metadata.topic)
+        print (record_metadata.partition)
+        print (record_metadata.offset)
 
     await client.connect()
     #client.run_until_disconnected()
