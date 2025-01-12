@@ -73,7 +73,7 @@ async def start_client(session_name):
             }
 
             response = requests.post(
-                f"{APP_HOST}/chat/new-message-event/",
+                f"{APP_HOST}/api/chats/new-message-event/",
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )
