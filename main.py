@@ -79,7 +79,7 @@ async def start_client(session_name):
             )
             print(response.status_code)
         except Exception as e:
-            logger.error(f"New message event sent  error: {e}")
+            logger.error(e)
             return False
 
 
