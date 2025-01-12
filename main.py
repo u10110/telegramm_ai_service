@@ -66,7 +66,7 @@ async def start_client(session_name):
             "to_id": event.to_id,
             "from_id": event.from_id
         }
-        print(event.chat.name)
+
         try:
             response = requests.post(
                 f"{APP_HOST}/chat/new-message-event/",
