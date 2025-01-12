@@ -11,6 +11,9 @@ from os import walk
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
+from dotenv import load_dotenv
+load_dotenv()
+
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -28,7 +31,7 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 phone_hash_store = {}
 
 running_clients = []
-KAFKA_BOOTSTRAP_SERVERS = os.environ["KAFKA_BOOTSTRAP_SERVERS"]
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 logger.info(KAFKA_BOOTSTRAP_SERVERS)
 producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS])
 
