@@ -269,7 +269,7 @@ async def get_user_id_and_name_from_message(client, message):
         except Exception as e:
             print(f"Ошибка при получении username через sender_id: {e}")
 
-    return dict([("user_id", user_id), ("username", username)])
+    return {"user_id": user_id, "username": username}
 
 
 @app.get("/health/")
