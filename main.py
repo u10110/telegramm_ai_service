@@ -28,9 +28,9 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 phone_hash_store = {}
 
 running_clients = []
+KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 
-
-producer = KafkaProducer(bootstrap_servers=['broker1:1234'])
+producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS])
 
 def print_event(sc):
     print("Hello")
