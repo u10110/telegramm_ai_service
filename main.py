@@ -62,13 +62,13 @@ async def start_client(session_name):
             payload = {
                 "id": event.id,
                 "date": event.date,
-                "username": user_data.username,
+                "username": user_data['username'],
                 "channel": event.message.peer_id,
                 "via_bot_id": event.via_bot_id,
                 "message": event.raw_text,
                 "to_id": event.to_id,
                 "from_id": event.from_id,
-                "user_id": user_data.user_id,
+                "user_id": user_data['user_id'],
                 "channel_phone": session_name.split('_')[1]
             }
 
