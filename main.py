@@ -77,7 +77,7 @@ async def start_client(session_name):
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )
-            print(response.status_code)
+            logger.debug(response)
         except Exception as e:
             logger.error(e)
             return False
