@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Upgrade pip and install Poetry
 RUN pip install --upgrade pip \
-    && pip install fastapi uvicorn telethon kafka-python
+    && pip install fastapi uvicorn telethon kafka-python python-dotenv
 
 # Копируем приложение
 COPY . .
