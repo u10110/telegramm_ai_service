@@ -43,7 +43,7 @@ async def start_client(session_name):
 
     @client.on(events.NewMessage)
     async def my_event_handler(event):
-        await client.connect()
+
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
         logger.debug(event)
         #future = producer.send('telethon-events', b'raw_bytes')
@@ -77,7 +77,7 @@ async def start_client(session_name):
                 json=payload,
                 headers={"Content-Type": "application/json"}
             )
-            return response.status_code == 200
+            print(response.status_code)
         except Exception as e:
             print(f"New message event sent  error: {e}")
             return False
