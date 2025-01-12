@@ -80,7 +80,6 @@ async def start_client(session_name):
             logger.debug(response)
         except Exception as e:
             logger.error(e)
-            return False
 
 
     await client.connect()
