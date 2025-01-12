@@ -29,7 +29,7 @@ phone_hash_store = {}
 
 running_clients = []
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-
+logger.info(KAFKA_BOOTSTRAP_SERVERS)
 producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS])
 
 def print_event(sc):
