@@ -56,7 +56,7 @@ async def start_client(session_name):
         #    logger.error(e)
         #    pass
 
-        user_data = get_user_id_and_name_from_message(client, event.message)
+        user_data = await get_user_id_and_name_from_message(client, event.message)
 
         try:
             payload = {
