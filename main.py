@@ -59,14 +59,14 @@ async def start_client(session_name):
         payload = {
             "id": event.id,
             "date": event.date,
-            "username": event.username,
+            #"username": event.username,
             "user_id": event.user_id,
             "via_bot_id": event.via_bot_id,
             "message": event.raw_text,
             "to_id": event.to_id,
             "from_id": event.from_id
         }
-
+        print(event.chat.name)
         try:
             response = requests.post(
                 f"{APP_HOST}/chat/new-message-event/",
