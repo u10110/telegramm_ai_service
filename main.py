@@ -45,7 +45,7 @@ async def start_client(session_name):
     async def my_event_handler(event):
         await client.connect()
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
-        logger.info(event)
+        logger.debug(event)
         #future = producer.send('telethon-events', b'raw_bytes')
 
         # Block for 'synchronous' sends
