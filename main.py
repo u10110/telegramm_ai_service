@@ -79,7 +79,7 @@ async def start_client(session_name):
             )
             print(response.status_code)
         except Exception as e:
-            print(f"New message event sent  error: {e}")
+            logger.error(f"New message event sent  error: {e}")
             return False
 
 
@@ -222,7 +222,7 @@ async def get_all_messages(client, channel_id, limit):
             add_offset=0,
             hash=0
         ))
-        print(f"Получено сообщений: {len(history.messages)}")
+        logger.error(f"Получено сообщений: {len(history.messages)}")
 
         all_messages = []
         for message in history.messages:
@@ -246,7 +246,7 @@ async def get_all_messages(client, channel_id, limit):
 
         return all_messages
     except Exception as e:
-        print(f"Ошибка при получении сообщений: {e}")
+        logger.error(f"Ошибка при получении сообщений: {e}")
         raise
 
 
@@ -259,7 +259,7 @@ async def get_user_id_and_name_from_message(client, message):
             sender = await client.get_entity(user_id)
             username = getattr(sender, 'username', None)
         except Exception as e:
-            print(f"Ошибка при получении username: {e}")
+            logger.error(f"Ошибка при получении username: {e}")
 
     if not user_id and message.sender_id:
         try:
@@ -267,7 +267,7 @@ async def get_user_id_and_name_from_message(client, message):
             user_id = sender.id
             username = getattr(sender, 'username', None)
         except Exception as e:
-            print(f"Ошибка при получении username через sender_id: {e}")
+            logger.error(f"Ошибка при получении username через sender_id: {e}")
 
     return {"user_id": user_id, "username": username}
 
