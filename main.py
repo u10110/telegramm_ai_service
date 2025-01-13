@@ -43,7 +43,7 @@ async def start_client(session_name):
 
     @client.on(events.NewMessage)
     async def my_event_handler(event):
-
+        await client.connect()
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
         #logger.debug(event)
         #future = producer.send('telethon-events', b'raw_bytes')
@@ -88,7 +88,7 @@ async def start_client(session_name):
     running_clients.append((session_name, client))
 
 
-    await client.connect()
+
 
     logger.info(f"Клиент Telegram подключён: {session_name}")
 
@@ -351,7 +351,6 @@ async def send_message(data: SendMessageRequest):
         logger.error(f"Ошибка при отправке сообщения: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
         logger.info(f"Клиент Telegram {sender_phone} отключён")
 
 
