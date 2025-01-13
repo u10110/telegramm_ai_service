@@ -121,10 +121,10 @@ async def send_code(phone: str):
             logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
 
-    client = await get_or_start_client(session_name)
-
+    client = TelegramClient(session_name, API_ID, API_HASH)
+    await client.connect()
     try:
-        await client.connect()
+
         logger.info("Клиент Telegram подключён")
         if not await client.is_user_authorized():
             result = await client.send_code_request(phone)
@@ -135,8 +135,10 @@ async def send_code(phone: str):
         logger.info("Пользователь уже авторизован")
         return {"message": "Пользователь уже авторизован", "success": True}
     except Exception as e:
+
         logger.error(f"Ошибка при отправке кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    await client.disconnect()
 
 
 class VerifyCodeRequest(BaseModel):
@@ -152,7 +154,7 @@ async def verify_code(data: VerifyCodeRequest):
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
 
-    client = await get_or_start_client(session_name)
+    client = TelegramClient(session_name, API_ID, API_HASH)
 
     try:
         await client.connect()
@@ -164,12 +166,14 @@ async def verify_code(data: VerifyCodeRequest):
 
         await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
         logger.info(f"Код подтверждён для телефона: {phone}")
-
         del phone_hash_store[phone]
+        client.disconnect()
         return {"message": f"Авторизация завершена для номера {phone}", "success": True}
     except Exception as e:
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 @app.get("/get-users/")
