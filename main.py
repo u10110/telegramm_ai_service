@@ -256,6 +256,7 @@ async def get_all_messages(client, channel_id, limit):
 async def get_user_id_and_name_from_message(client, message):
     user_id = None
     username = None
+    logger.error(f"get_user_id_and_name_from_message")
     if message.from_id and isinstance(message.from_id, PeerUser) and \
             message.to_id and isinstance(message.to_id, PeerUser):
         user_id = message.to_id.user_id
