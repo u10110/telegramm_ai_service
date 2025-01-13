@@ -43,7 +43,7 @@ async def start_client(session_name):
 
     @client.on(events.NewMessage)
     async def my_event_handler(event):
-        await client.connect()
+
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
         #logger.debug(event)
         #future = producer.send('telethon-events', b'raw_bytes')
@@ -81,14 +81,10 @@ async def start_client(session_name):
         except Exception as e:
             logger.error(e)
 
-
-
-    #await client.run_until_disconnected()
+    client.connect()
+    client.run_until_disconnected()
 
     running_clients.append((session_name, client))
-
-
-
 
     logger.info(f"Клиент Telegram подключён: {session_name}")
 
