@@ -84,8 +84,8 @@ async def start_client(session_name):
             except Exception as e:
                 logger.error(e)
 
-    client.start()
-    client.run_until_disconnected()
+    await client.connect()
+    #await client.run_until_disconnected()
 
     running_clients.append((session_name, client))
 
