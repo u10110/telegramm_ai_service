@@ -75,7 +75,8 @@ async def start_client(session_name):
             response = requests.post(
                 f"{APP_HOST}/api/chats/new-message-event/",
                 json=payload,
-                headers={"Content-Type": "application/json"}
+                headers={"Content-Type": "application/json"},
+                verify=False
             )
             logger.debug(response)
         except Exception as e:
