@@ -56,31 +56,33 @@ async def start_client(session_name):
         #    logger.error(e)
         #    pass
 
-        user_data = await get_user_id_and_name_from_message(client, event.message)
-        logger.debug(user_data)
-        try:
-            payload = {
-                "id": event.id,
-                "date": event.date.isoformat(),
-                "username": user_data['username'],
-               # "channel": event.message.peer_id,
-                "via_bot_id": event.via_bot_id,
-                "message": event.raw_text,
-                "to_id": {"user_id": event.to_id.user_id},
-                "from_id": {"user_id": event.from_id.user_id},
-                "user_id": user_data['user_id'],
-                "channel_phone": session_name.split('_')[1]
-            }
+        if event.from_id and isinstance(event.from_id, PeerUser) and \
+                event.to_id and isinstance(event.to_id, PeerUser):
+            user_data = await get_user_id_and_name_from_message(client, event)
+            logger.debug(user_data)
+            try:
+                payload = {
+                    "id": event.id,
+                    "date": event.date.isoformat(),
+                    "username": user_data['username'],
+                   # "channel": event.message.peer_id,
+                    "via_bot_id": event.via_bot_id,
+                    "message": event.raw_text,
+                    "to_id": {"user_id": event.to_id.user_id},
+                    "from_id": {"user_id": event.from_id.user_id},
+                    "user_id": user_data['user_id'],
+                    "channel_phone": session_name.split('_')[1]
+                }
 
-            response = requests.post(
-                f"{APP_HOST}/api/chats/new-message-event/",
-                json=payload,
-                headers={"Content-Type": "application/json"},
-                verify=False
-            )
-            logger.debug(response)
-        except Exception as e:
-            logger.error(e)
+                response = requests.post(
+                    f"{APP_HOST}/api/chats/new-message-event/",
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    verify=False
+                )
+                logger.debug(response)
+            except Exception as e:
+                logger.error(e)
 
     await client.connect()
     #await client.run_until_disconnected()
