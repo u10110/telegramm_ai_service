@@ -87,7 +87,7 @@ async def start_client(session_name):
     await client.connect()
     #await client.run_until_disconnected()
 
-    running_clients.append((session_name, client))
+    #running_clients.append((session_name, client))
 
     logger.info(f"Клиент Telegram подключён: {session_name}")
 
@@ -186,10 +186,12 @@ async def get_users(phone: str):
     phone = phone.strip().replace("+", "")
     session_name = "session_" + phone
     print(f"session_name {session_name}")
-
-    client = await get_or_start_client(session_name)
+    client = TelegramClient(session_name, API_ID, API_HASH)
+    print(client)
 
     try:
+        await client.connect()
+        logger.info("Клиент Telegram подключён")
 
         dialogs = await client.get_dialogs()
         for dialog in dialogs:
@@ -204,7 +206,9 @@ async def get_users(phone: str):
     except Exception as e:
         logger.error(f"Ошибка при получении списка пользователей: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
+    finally:
+        await client.disconnect()
+        logger.info("Клиент Telegram отключён")
 
 class GetMessagesRequest(BaseModel):
     phone: str
@@ -295,10 +299,13 @@ async def get_messages(data: GetMessagesRequest):
     """
     phone = data.phone.strip().replace("+", "")
     session_name = os.path.join(SESSION_DIR, "session_" + phone)
-
-    client = await get_or_start_client(session_name)
+    client = TelegramClient(session_name, API_ID, API_HASH)
 
     try:
+        # Подключаем клиента
+        await client.connect()
+        logger.info("Клиент Telegram подключён")
+
         # ID канала или пользователя
         channel_id = data.user_id
 
@@ -309,6 +316,9 @@ async def get_messages(data: GetMessagesRequest):
     except Exception as e:
         logger.error(f"Ошибка при получении сообщений: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.disconnect()
+        logger.info("Клиент Telegram отключён")
 
 
 class SendMessageRequest(BaseModel):
@@ -334,8 +344,8 @@ async def send_message(data: SendMessageRequest):
     """
     sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
     session_name = "session_" + sender_phone
-
-    client = await get_or_start_client(session_name)
+    session_name = os.path.join(SESSION_DIR, "session_" + sender_phone)
+    client = TelegramClient(session_name, API_ID, API_HASH)
 
     try:
         await client.connect()
@@ -357,6 +367,7 @@ async def send_message(data: SendMessageRequest):
         logger.error(f"Ошибка при отправке сообщения: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
+        await client.disconnect()
         logger.info(f"Клиент Telegram {sender_phone} отключён")
 
 
