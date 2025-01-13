@@ -7,3 +7,8 @@ services:
       - /sessions:/app/sessions
     ports:
       - 8088:8001
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1450
