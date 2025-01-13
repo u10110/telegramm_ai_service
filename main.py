@@ -92,12 +92,12 @@ async def start_client(session_name):
     logger.info(f"Клиент Telegram подключён: {session_name}")
 
 
-@app.on_event("startup")
-async def startup_event():
-    for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
-        for filename in filenames:
-            session_name = filename.split('.')[0]
-            await start_client(session_name)
+#@app.on_event("startup")
+#async def startup_event():
+    #for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
+    #    for filename in filenames:
+    #        session_name = filename.split('.')[0]
+    #      #  await start_client(session_name)
 
 
 async def get_or_start_client(session_name):
