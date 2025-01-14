@@ -140,7 +140,7 @@ async def send_code(phone: str):
         logger.error(f"Ошибка при отправке кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+        client.disconnect()
         logger.info("Клиент Telegram отключён")
 
 
@@ -176,7 +176,7 @@ async def verify_code(data: VerifyCodeRequest):
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+        client.disconnect()
         logger.info("Клиент Telegram отключён")
 
 @app.get("/get-users/")
@@ -208,7 +208,7 @@ async def get_users(phone: str):
         logger.error(f"Ошибка при получении списка пользователей: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+        client.disconnect()
         logger.info("Клиент Telegram отключён")
 
 class GetMessagesRequest(BaseModel):
@@ -318,7 +318,7 @@ async def get_messages(data: GetMessagesRequest):
         logger.error(f"Ошибка при получении сообщений: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+        client.disconnect()
         logger.info("Клиент Telegram отключён")
 
 
@@ -367,7 +367,7 @@ async def send_message(data: SendMessageRequest):
         logger.error(f"Ошибка при отправке сообщения: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+        client.disconnect()
         logger.info(f"Клиент Telegram {sender_phone} отключён")
 
 
