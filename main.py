@@ -241,7 +241,7 @@ async def get_all_messages(client, channel_id, limit):
         all_messages = []
         for message in history.messages:
 
-            user_data = get_user_id_and_name_from_message(client, message)
+            user_data = await get_user_id_and_name_from_message(client, message)
 
             user_id = user_data['user_id']
             username = user_data['username']
