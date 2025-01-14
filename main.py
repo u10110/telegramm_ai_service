@@ -243,8 +243,8 @@ async def get_all_messages(client, channel_id, limit):
 
             user_data = get_user_id_and_name_from_message(client, message)
 
-            user_id = user_data.get('user_id')
-            username = user_data.get('username')
+            user_id = user_data['user_id']
+            username = user_data['username']
 
             print(f"Message ID: {message.id}, Date: {message.date}, Text: {message.message}, User ID: {user_id}, Username: @{username if username else 'None'}")
 
