@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-API_ID = '21275822'
+API_ID = 21275822
 API_HASH = '300cc403b6ad13139d9e16d8dca9ea4e'
 SESSION_DIR = os.path.join(os.getcwd(), 'sessions')
 os.makedirs(SESSION_DIR, exist_ok=True)
@@ -112,7 +112,7 @@ async def get_or_start_client(session_name):
 async def send_code(phone: str):
     phone = phone.strip().replace("+", "")
     logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
-    session_name = "session_" + phone
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
     # Если файл сессии существует, удаляем его
     if os.path.exists(session_name + ".session"):
@@ -124,9 +124,9 @@ async def send_code(phone: str):
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
 
     client = TelegramClient(session_name, API_ID, API_HASH)
-    await client.connect()
-    try:
 
+    try:
+        await client.connect()
         logger.info("Клиент Telegram подключён")
         if not await client.is_user_authorized():
             result = await client.send_code_request(phone)
@@ -137,10 +137,11 @@ async def send_code(phone: str):
         logger.info("Пользователь уже авторизован")
         return {"message": "Пользователь уже авторизован", "success": True}
     except Exception as e:
-
         logger.error(f"Ошибка при отправке кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-    await client.disconnect()
+    finally:
+        await client.disconnect()
+        logger.info("Клиент Telegram отключён")
 
 
 class VerifyCodeRequest(BaseModel):
@@ -151,32 +152,32 @@ class VerifyCodeRequest(BaseModel):
 async def verify_code(data: VerifyCodeRequest):
     phone = data.phone
     phone = phone.strip().replace("+", "")
-    session_name = "session_" + phone
     code = data.code
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
-
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
     client = TelegramClient(session_name, API_ID, API_HASH)
 
     try:
-        await client.connect()
+
         print(f"phone_hash_store {phone_hash_store}")
         phone_code_hash = phone_hash_store.get(phone)
         
         if not phone_code_hash:
             raise HTTPException(status_code=400, detail="Код не был отправлен или истёк")
 
+        await client.connect()
+        logger.info("Клиент Telegram подключён")
         await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
         logger.info(f"Код подтверждён для телефона: {phone}")
         del phone_hash_store[phone]
-        client.disconnect()
         return {"message": f"Авторизация завершена для номера {phone}", "success": True}
     except Exception as e:
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-
+    finally:
+        await client.disconnect()
+        logger.info("Клиент Telegram отключён")
 
 @app.get("/get-users/")
 async def get_users(phone: str):
@@ -184,7 +185,7 @@ async def get_users(phone: str):
     Получает список всех пользователей, с которыми велась переписка.
     """
     phone = phone.strip().replace("+", "")
-    session_name = "session_" + phone
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
     print(f"session_name {session_name}")
     client = TelegramClient(session_name, API_ID, API_HASH)
     print(client)
@@ -343,7 +344,6 @@ async def send_message(data: SendMessageRequest):
     - `data.message`: Сообщение.
     """
     sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
-    session_name = "session_" + sender_phone
     session_name = os.path.join(SESSION_DIR, "session_" + sender_phone)
     client = TelegramClient(session_name, API_ID, API_HASH)
 
