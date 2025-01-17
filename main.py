@@ -102,7 +102,7 @@ async def get_create_client(phone):
                     "channel_phone": session_name.split('_')[1]
                 }
                 await producer.produce('new-message-events', event.id, payload, callback=delivery_callback)
-                await producer.poll(10000)
+                await producer.poll(1000)
                 await producer.flush()
 
             except Exception as e:
