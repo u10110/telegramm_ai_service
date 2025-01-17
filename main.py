@@ -38,15 +38,15 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 # Временное хранилище phone_code_hash для каждого номера
 phone_hash_store = {}
 
-running_clients = dict()
-producer = None
-
+running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
+producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+
+
 APP_HOST = os.getenv("APP_HOST")
 
 @app.on_event("startup")
 async def startup_event():
-    #global producer=KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
     for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
         for filename in filenames:
             session_name = filename.split('.')[0]
@@ -55,22 +55,23 @@ async def startup_event():
 
 async def get_create_client(phone):
     phone = phone.strip().replace("+", "")
-    #client = running_clients[phone]
-    #if client is None:
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
-    proxy = {
-        'proxy_type': python_socks.ProxyType.HTTP,
-        'addr': '185.162.130.86',
-        'port': 10000,
-        'username': '8zLRaaXSXfKEr7pQAPoh',
-        'password': 'RNW78Fm5',
-        'rdns': True
-    }
+    client = running_clients.get(phone)
+    if client is None:
+        session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
-    client = TelegramClient(session_name, API_ID, API_HASH,
+        proxy = {
+            'proxy_type': python_socks.ProxyType.HTTP,
+            'addr': '185.162.130.86',
+            'port': 10000,
+            'username': '8zLRaaXSXfKEr7pQAPoh',
+            'password': 'RNW78Fm5',
+            'rdns': True
+        }
+
+        client = TelegramClient(session_name, API_ID, API_HASH,
                             proxy=proxy)
-    #running_clients[phone] = client
+        running_clients[phone] = client
 
     @client.on(events.NewMessage)
     async def new_message_handler(event):
@@ -108,10 +109,6 @@ async def get_create_client(phone):
 
             except Exception as e:
                 logger.error(e)
-
-
-
-
 
     return client
 
