@@ -40,7 +40,7 @@ phone_hash_store = {}
 
 running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,  api_version=(0,11,5))
 
 
 APP_HOST = os.getenv("APP_HOST")
