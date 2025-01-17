@@ -38,7 +38,7 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 # Временное хранилище phone_code_hash для каждого номера
 phone_hash_store = {}
 
-running_clients = []
+running_clients = dict()
 producer = None
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
