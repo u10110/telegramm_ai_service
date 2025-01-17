@@ -15,8 +15,7 @@ build:telegramm_ai_service:
   image:
     name: docker:stable
     entrypoint: ["/bin/sh", "-c"]
-  tags:
-    - regru_telegram
+  tags: [app-ea]
   only:
     - main
   variables:
@@ -34,8 +33,7 @@ deploy:
     entrypoint: ["/bin/sh", "-c"]
   only:
     - main
-  tags:
-    - regru_telegram
+  tags: [app-ea]
   variables:
     CONTAINER_IMAGE_DEVTEST: registry.mplab.io/telegramm_ai_service:latest
   # before_script:

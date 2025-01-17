@@ -7,11 +7,13 @@ from telethon.tl.types import PeerUser, User
 from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
+import time
 import requests
-from kafka import KafkaProducer
-from kafka.errors import KafkaError
-
+from telethon.tl.functions.account import UpdateStatusRequest
+from telethon import functions, types, connection
 from dotenv import load_dotenv
+import python_socks
+import traceback
 load_dotenv()
 
 logging.basicConfig(
@@ -34,63 +36,23 @@ running_clients = []
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 APP_HOST = os.getenv("APP_HOST")
 
-#producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS])
 
+async def create_client(phone):
+    phone = phone.strip().replace("+", "")
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
+    logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
 
-async def start_client(session_name):
-    session_file = os.path.join(SESSION_DIR, session_name)
-    client = TelegramClient(session_file, API_ID, API_HASH)
+    proxy = {
+        'proxy_type': python_socks.ProxyType.HTTP,
+        'addr': '185.162.130.86',
+        'port': 10000,
+        'username': '8zLRaaXSXfKEr7pQAPoh',
+        'password': 'RNW78Fm5',
+        'rdns': True
+    }
 
-    @client.on(events.NewMessage)
-    async def my_event_handler(event):
-
-        logger.info(f"Message peceiver: {session_name} {event.raw_text}")
-        #logger.debug(event)
-        #future = producer.send('telethon-events', b'raw_bytes')
-
-        # Block for 'synchronous' sends
-        #try:
-        #    record_metadata = future.get(timeout=10)
-        #except KafkaError as e:
-        #    # Decide what to do if produce request failed...
-        #    logger.error(e)
-        #    pass
-
-        if event.from_id and isinstance(event.from_id, PeerUser) and \
-                event.to_id and isinstance(event.to_id, PeerUser):
-            user_data = await get_user_id_and_name_from_message(client, event)
-            logger.debug(user_data)
-            try:
-                payload = {
-                    "id": event.id,
-                    "date": event.date.isoformat(),
-                    "username": user_data['username'],
-                   # "channel": event.message.peer_id,
-                    "via_bot_id": event.via_bot_id,
-                    "message": event.raw_text,
-                    "to_id": {"user_id": event.to_id.user_id},
-                    "from_id": {"user_id": event.from_id.user_id},
-                    "user_id": user_data['user_id'],
-                    "channel_phone": session_name.split('_')[1]
-                }
-
-                response = requests.post(
-                    f"{APP_HOST}/api/chats/new-message-event/",
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                    verify=False
-                )
-                logger.debug(response)
-            except Exception as e:
-                logger.error(e)
-
-    await client.connect()
-    #await client.run_until_disconnected()
-
-    #running_clients.append((session_name, client))
-
-    logger.info(f"Клиент Telegram подключён: {session_name}")
-
+    return TelegramClient(session_name, API_ID, API_HASH,
+                          proxy=proxy)
 
 #@app.on_event("startup")
 #async def startup_event():
@@ -100,15 +62,7 @@ async def start_client(session_name):
     #      #  await start_client(session_name)
 
 
-async def get_or_start_client(session_name):
-    clients_dict = dict(running_clients)
-    if clients_dict[session_name] is not None:
-        return clients_dict[session_name]
-    clients_dict[session_name] = await start_client(session_name)
-    return clients_dict[session_name]
-
-
-@app.post("/send-code/")
+@app.get("/send-code/")
 async def send_code(phone: str):
     phone = phone.strip().replace("+", "")
     logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
@@ -123,9 +77,8 @@ async def send_code(phone: str):
             logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
 
-    client = TelegramClient(session_name, API_ID, API_HASH)
-
     try:
+        client = await create_client(phone)
         await client.connect()
         logger.info("Клиент Telegram подключён")
         if not await client.is_user_authorized():
@@ -138,6 +91,7 @@ async def send_code(phone: str):
         return {"message": "Пользователь уже авторизован", "success": True}
     except Exception as e:
         logger.error(f"Ошибка при отправке кода: {str(e)}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         await client.disconnect()
@@ -155,8 +109,7 @@ async def verify_code(data: VerifyCodeRequest):
     code = data.code
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = await create_client(phone)
 
     try:
 
@@ -179,6 +132,7 @@ async def verify_code(data: VerifyCodeRequest):
         await client.disconnect()
         logger.info("Клиент Telegram отключён")
 
+
 @app.get("/get-users/")
 async def get_users(phone: str):
     """
@@ -187,7 +141,7 @@ async def get_users(phone: str):
     phone = phone.strip().replace("+", "")
     session_name = os.path.join(SESSION_DIR, "session_" + phone)
     print(f"session_name {session_name}")
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = await create_client(phone)
     print(client)
 
     try:
@@ -211,13 +165,12 @@ async def get_users(phone: str):
         await client.disconnect()
         logger.info("Клиент Telegram отключён")
 
+
 class GetMessagesRequest(BaseModel):
     phone: str
     user_id: int
     limit: int
 
-
-from telethon.tl.types import PeerUser
 
 async def get_all_messages(client, channel_id, limit):
     try:
@@ -299,8 +252,7 @@ async def get_messages(data: GetMessagesRequest):
     Получает все сообщения из указанного канала с полными данными.
     """
     phone = data.phone.strip().replace("+", "")
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = await create_client(phone)
 
     try:
         # Подключаем клиента
@@ -327,14 +279,10 @@ class SendMessageRequest(BaseModel):
     username: str
     message: str
     
-    
-from telethon.tl.functions.contacts import ResolveUsernameRequest
-from telethon.tl.types import PeerUser
-from telethon.errors.rpcerrorlist import UserNotMutualContactError, UserPrivacyRestrictedError
-from telethon.tl.types import InputPeerUser
 
-from telethon.tl.functions.contacts import ImportContactsRequest
-from telethon.tl.types import InputPhoneContact, InputPeerUser
+from telethon.tl.types import PeerUser
+
+
 @app.post("/send-message/")
 async def send_message(data: SendMessageRequest):
     """
@@ -344,10 +292,10 @@ async def send_message(data: SendMessageRequest):
     - `data.message`: Сообщение.
     """
     sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
-    session_name = os.path.join(SESSION_DIR, "session_" + sender_phone)
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = await create_client(sender_phone)
 
     try:
+        await client(UpdateStatusRequest(offline=False))
         await client.connect()
 
         # Определяем сущность пользователя по username
@@ -358,6 +306,11 @@ async def send_message(data: SendMessageRequest):
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
             raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
 
+        await client(functions.messages.SetTypingRequest(
+            peer=entity,
+            action=types.SendMessageTypingAction()
+        ))
+        time.sleep(5)
         # Отправка сообщения
         msg = await client.send_message(entity, data.message)
         logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
