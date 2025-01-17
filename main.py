@@ -9,11 +9,18 @@ from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
 import time
 import requests
+
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
+import json
+from bson import json_util
+
 from telethon.tl.functions.account import UpdateStatusRequest
-from telethon import functions, types, connection
+from telethon import functions, types, events
 from dotenv import load_dotenv
 import python_socks
 import traceback
+
 load_dotenv()
 
 logging.basicConfig(
@@ -35,31 +42,54 @@ phone_hash_store = {}
 running_clients = []
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 APP_HOST = os.getenv("APP_HOST")
+producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS])
 
 
-async def create_client(phone):
+async def get_create_client(phone):
     phone = phone.strip().replace("+", "")
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
-    logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
+    client = running_clients[phone]
+    if client is None:
+        session_name = os.path.join(SESSION_DIR, "session_" + phone)
+        logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
 
-    proxy = {
-        'proxy_type': python_socks.ProxyType.HTTP,
-        'addr': '185.162.130.86',
-        'port': 10000,
-        'username': '8zLRaaXSXfKEr7pQAPoh',
-        'password': 'RNW78Fm5',
-        'rdns': True
-    }
+        proxy = {
+            'proxy_type': python_socks.ProxyType.HTTP,
+            'addr': '185.162.130.86',
+            'port': 10000,
+            'username': '8zLRaaXSXfKEr7pQAPoh',
+            'password': 'RNW78Fm5',
+            'rdns': True
+        }
 
-    return TelegramClient(session_name, API_ID, API_HASH,
-                          proxy=proxy)
+        client = TelegramClient(session_name, API_ID, API_HASH,
+                                proxy=proxy)
+        running_clients[phone] = client
 
-#@app.on_event("startup")
-#async def startup_event():
-    #for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
-    #    for filename in filenames:
-    #        session_name = filename.split('.')[0]
-    #      #  await start_client(session_name)
+    @client.on(events.NewMessage)
+    async def new_message_handler(event):
+
+        logger.info(f"Message peceiver: {session_name} {event.raw_text}")
+        logger.debug(event)
+        future = producer.send('new-message-events', json.dumps(event, default=json_util.default).encode('utf-8'))
+
+        # Block for 'synchronous' sends
+        try:
+            record_metadata = future.get(timeout=10)
+        except KafkaError as e:
+            # Decide what to do if produce request failed...
+            logger.error(e)
+            pass
+
+    return client
+
+
+@app.on_event("startup")
+async def startup_event():
+    for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
+        for filename in filenames:
+            session_name = filename.split('.')[0]
+            phone = session_name.split('_')[1]
+            await get_create_client(phone)
 
 
 @app.get("/send-code/")
@@ -76,9 +106,9 @@ async def send_code(phone: str):
         except Exception as e:
             logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
-
+    client = await get_create_client(phone)
     try:
-        client = await create_client(phone)
+
         await client.connect()
         logger.info("Клиент Telegram подключён")
         if not await client.is_user_authorized():
@@ -102,6 +132,7 @@ class VerifyCodeRequest(BaseModel):
     phone: str
     code: str
 
+
 @app.post("/verify-code/")
 async def verify_code(data: VerifyCodeRequest):
     phone = data.phone
@@ -109,13 +140,12 @@ async def verify_code(data: VerifyCodeRequest):
     code = data.code
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
-    client = await create_client(phone)
-
+    client = await get_create_client(phone)
     try:
 
         print(f"phone_hash_store {phone_hash_store}")
         phone_code_hash = phone_hash_store.get(phone)
-        
+
         if not phone_code_hash:
             raise HTTPException(status_code=400, detail="Код не был отправлен или истёк")
 
@@ -141,7 +171,7 @@ async def get_users(phone: str):
     phone = phone.strip().replace("+", "")
     session_name = os.path.join(SESSION_DIR, "session_" + phone)
     print(f"session_name {session_name}")
-    client = await create_client(phone)
+    client = await get_create_client(phone)
     print(client)
 
     try:
@@ -153,7 +183,7 @@ async def get_users(phone: str):
             print(f"Dialog: {dialog.id}, Name: {dialog.name}, Entity: {type(dialog.entity)}")
 
         users = [
-            {"id": dialog.id, "name": dialog.name} # ! dialog.name это имя аккаунта а не username
+            {"id": dialog.id, "name": dialog.name}  # ! dialog.name это имя аккаунта а не username
             for dialog in dialogs
             if isinstance(dialog.entity, User)
         ]
@@ -193,13 +223,13 @@ async def get_all_messages(client, channel_id, limit):
 
         all_messages = []
         for message in history.messages:
-
             user_data = await get_user_id_and_name_from_message(client, message)
 
             user_id = user_data['user_id']
             username = user_data['username']
 
-            print(f"Message ID: {message.id}, Date: {message.date}, Text: {message.message}, User ID: {user_id}, Username: @{username if username else 'None'}")
+            print(
+                f"Message ID: {message.id}, Date: {message.date}, Text: {message.message}, User ID: {user_id}, Username: @{username if username else 'None'}")
 
             all_messages.append({
                 "id": message.id,
@@ -252,7 +282,7 @@ async def get_messages(data: GetMessagesRequest):
     Получает все сообщения из указанного канала с полными данными.
     """
     phone = data.phone.strip().replace("+", "")
-    client = await create_client(phone)
+    client = await get_create_client(phone)
 
     try:
         # Подключаем клиента
@@ -278,7 +308,7 @@ class SendMessageRequest(BaseModel):
     phone: str
     username: str
     message: str
-    
+
 
 from telethon.tl.types import PeerUser
 
@@ -292,7 +322,7 @@ async def send_message(data: SendMessageRequest):
     - `data.message`: Сообщение.
     """
     sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
-    client = await create_client(sender_phone)
+    client = await get_create_client(sender_phone)
 
     try:
         await client(UpdateStatusRequest(offline=False))
@@ -322,5 +352,3 @@ async def send_message(data: SendMessageRequest):
     finally:
         await client.disconnect()
         logger.info(f"Клиент Telegram {sender_phone} отключён")
-
-
