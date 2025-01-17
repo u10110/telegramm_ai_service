@@ -46,7 +46,7 @@ APP_HOST = os.getenv("APP_HOST")
 
 @app.on_event("startup")
 async def startup_event():
-    producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+    #global producer=KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
     for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
         for filename in filenames:
             session_name = filename.split('.')[0]
