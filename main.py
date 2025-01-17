@@ -39,10 +39,19 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 phone_hash_store = {}
 
 running_clients = []
+producer = None
+
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 APP_HOST = os.getenv("APP_HOST")
-producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
 
+@app.on_event("startup")
+async def startup_event():
+    producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+    for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
+        for filename in filenames:
+            session_name = filename.split('.')[0]
+            phone = session_name.split('_')[1]
+            await get_create_client(phone)
 
 async def get_create_client(phone):
     phone = phone.strip().replace("+", "")
@@ -71,7 +80,7 @@ async def get_create_client(phone):
         logger.debug(event)
 
         if event.from_id and isinstance(event.from_id, PeerUser) and \
-                event.to_id and isinstance(event.to_id, PeerUser):
+                event.to_id and isinstance(event.to_id, PeerUser) and producer is not None:
             user_data = await get_user_id_and_name_from_message(client, event)
             logger.debug(user_data)
             try:
@@ -108,13 +117,7 @@ async def get_create_client(phone):
     return client
 
 
-@app.on_event("startup")
-async def startup_event():
-    for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
-        for filename in filenames:
-            session_name = filename.split('.')[0]
-            phone = session_name.split('_')[1]
-            await get_create_client(phone)
+
 
 
 @app.get("/send-code/")
