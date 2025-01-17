@@ -13,7 +13,6 @@ import requests
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 import json
-from bson import json_util
 
 from telethon.tl.functions.account import UpdateStatusRequest
 from telethon import functions, types, events
@@ -70,7 +69,7 @@ async def get_create_client(phone):
 
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
         logger.debug(event)
-        future = producer.send('new-message-events', json.dumps(event, default=json_util.default).encode('utf-8'))
+        future = producer.send('new-message-events', json.dumps(event).encode('utf-8'))
 
         # Block for 'synchronous' sends
         try:
