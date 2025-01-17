@@ -69,15 +69,41 @@ async def get_create_client(phone):
 
         logger.info(f"Message peceiver: {session_name} {event.raw_text}")
         logger.debug(event)
-        future = producer.send('new-message-events', json.dumps(event).encode('utf-8'))
 
-        # Block for 'synchronous' sends
-        try:
-            record_metadata = future.get(timeout=10)
-        except KafkaError as e:
-            # Decide what to do if produce request failed...
-            logger.error(e)
-            pass
+        if event.from_id and isinstance(event.from_id, PeerUser) and \
+                event.to_id and isinstance(event.to_id, PeerUser):
+            user_data = await get_user_id_and_name_from_message(client, event)
+            logger.debug(user_data)
+            try:
+                payload = {
+                    "id": event.id,
+                    "date": event.date.isoformat(),
+                    "username": user_data['username'],
+                    # "channel": event.message.peer_id,
+                    "via_bot_id": event.via_bot_id,
+                    "message": event.raw_text,
+                    "to_id": {"user_id": event.to_id.user_id},
+                    "from_id": {"user_id": event.from_id.user_id},
+                    "user_id": user_data['user_id'],
+                    "channel_phone": session_name.split('_')[1]
+                }
+
+                future = producer.send('new-message-events', json.dumps(payload))
+
+                # Block for 'synchronous' sends
+                try:
+                    record_metadata = future.get(timeout=10)
+                except KafkaError as e:
+                    # Decide what to do if produce request failed...
+                    logger.error(e)
+                    pass
+
+            except Exception as e:
+                logger.error(e)
+
+
+
+
 
     return client
 
