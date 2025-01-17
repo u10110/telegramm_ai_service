@@ -10,8 +10,7 @@ from os import walk
 import time
 import requests
 
-from kafka import KafkaProducer
-from kafka.errors import KafkaError
+from confluent_kafka import Producer
 import json
 
 from telethon.tl.functions.account import UpdateStatusRequest
@@ -40,8 +39,14 @@ phone_hash_store = {}
 
 running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
-producer = KafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,  api_version=(2,0,0))
+producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
 
+def delivery_callback(err, msg):
+    if err:
+        print('ERROR: Message failed delivery: {}'.format(err))
+    else:
+        print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
+            topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
 
 APP_HOST = os.getenv("APP_HOST")
 
@@ -96,16 +101,9 @@ async def get_create_client(phone):
                     "user_id": user_data['user_id'],
                     "channel_phone": session_name.split('_')[1]
                 }
-
-                future = producer.send('new-message-events', json.dumps(payload))
-
-                # Block for 'synchronous' sends
-                try:
-                    record_metadata = future.get(timeout=10)
-                except KafkaError as e:
-                    # Decide what to do if produce request failed...
-                    logger.error(e)
-                    pass
+                await producer.produce('new-message-events', event.id, payload, callback=delivery_callback)
+                await producer.poll(10000)
+                await producer.flush()
 
             except Exception as e:
                 logger.error(e)
