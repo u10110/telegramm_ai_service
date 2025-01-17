@@ -55,23 +55,22 @@ async def startup_event():
 
 async def get_create_client(phone):
     phone = phone.strip().replace("+", "")
-    client = running_clients[phone]
-    if client is None:
-        session_name = os.path.join(SESSION_DIR, "session_" + phone)
-        logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
+    #client = running_clients[phone]
+    #if client is None:
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
-        proxy = {
-            'proxy_type': python_socks.ProxyType.HTTP,
-            'addr': '185.162.130.86',
-            'port': 10000,
-            'username': '8zLRaaXSXfKEr7pQAPoh',
-            'password': 'RNW78Fm5',
-            'rdns': True
-        }
+    proxy = {
+        'proxy_type': python_socks.ProxyType.HTTP,
+        'addr': '185.162.130.86',
+        'port': 10000,
+        'username': '8zLRaaXSXfKEr7pQAPoh',
+        'password': 'RNW78Fm5',
+        'rdns': True
+    }
 
-        client = TelegramClient(session_name, API_ID, API_HASH,
-                                proxy=proxy)
-        running_clients[phone] = client
+    client = TelegramClient(session_name, API_ID, API_HASH,
+                            proxy=proxy)
+    #running_clients[phone] = client
 
     @client.on(events.NewMessage)
     async def new_message_handler(event):
