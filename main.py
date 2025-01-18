@@ -50,6 +50,16 @@ def delivery_callback(err, msg):
 
 APP_HOST = os.getenv("APP_HOST")
 
+proxy = {
+    'proxy_type': python_socks.ProxyType.HTTP,
+    'addr': '185.162.130.86',
+    'port': 10000,
+    'username': '8zLRaaXSXfKEr7pQAPoh',
+    'password': 'RNW78Fm5',
+    'rdns': True
+}
+
+
 @app.on_event("startup")
 async def startup_event():
     for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
@@ -64,15 +74,6 @@ async def get_create_client(phone):
     client = running_clients.get(phone)
     if client is None:
         session_name = os.path.join(SESSION_DIR, "session_" + phone)
-
-        proxy = {
-            'proxy_type': python_socks.ProxyType.HTTP,
-            'addr': '185.162.130.86',
-            'port': 10000,
-            'username': '8zLRaaXSXfKEr7pQAPoh',
-            'password': 'RNW78Fm5',
-            'rdns': True
-        }
 
         client = TelegramClient(session_name, API_ID, API_HASH,
                             proxy=proxy)
@@ -129,7 +130,8 @@ async def send_code(phone: str):
             logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
 
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = TelegramClient(session_name, API_ID, API_HASH,
+                            proxy=proxy)
 
     try:
 
@@ -166,7 +168,8 @@ async def verify_code(data: VerifyCodeRequest):
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
 
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = TelegramClient(session_name, API_ID, API_HASH,
+                            proxy=proxy)
 
     try:
 
