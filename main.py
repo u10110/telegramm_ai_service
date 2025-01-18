@@ -128,7 +128,9 @@ async def send_code(phone: str):
         except Exception as e:
             logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
-    client = await get_create_client(phone)
+
+    client = TelegramClient(session_name, API_ID, API_HASH)
+
     try:
 
         await client.connect()
@@ -159,10 +161,13 @@ class VerifyCodeRequest(BaseModel):
 async def verify_code(data: VerifyCodeRequest):
     phone = data.phone
     phone = phone.strip().replace("+", "")
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
     code = data.code
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
-    client = await get_create_client(phone)
+
+    client = TelegramClient(session_name, API_ID, API_HASH)
+
     try:
 
         print(f"phone_hash_store {phone_hash_store}")
