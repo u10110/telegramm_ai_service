@@ -358,9 +358,9 @@ async def send_message(data: SendMessageRequest):
     client = await get_create_client(sender_phone)
     logger.debug(client)
     try:
-        await client(UpdateStatusRequest(offline=False))
-        await client.connect()
 
+        await client.connect()
+        #await client(UpdateStatusRequest(offline=False))
         # Определяем сущность пользователя по username
         try:
             entity = await client.get_entity(data.username)
@@ -369,10 +369,10 @@ async def send_message(data: SendMessageRequest):
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
             raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
 
-        await client(functions.messages.SetTypingRequest(
-            peer=entity,
-            action=types.SendMessageTypingAction()
-        ))
+        #await client(functions.messages.SetTypingRequest(
+        #   peer=entity,
+        #    action=types.SendMessageTypingAction()
+        #))
         time.sleep(5)
         # Отправка сообщения
         msg = await client.send_message(entity, data.message)
