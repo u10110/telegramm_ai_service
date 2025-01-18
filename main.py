@@ -68,16 +68,19 @@ async def startup_event():
             phone = session_name.split('_')[1]
             await get_create_client(phone)
 
+
 async def get_create_client(phone):
     phone = phone.strip().replace("+", "")
+    try:
+        client = running_clients.get(phone)
+        if client is None:
+            session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
-    client = running_clients.get(phone)
-    if client is None:
-        session_name = os.path.join(SESSION_DIR, "session_" + phone)
-
-        client = TelegramClient(session_name, API_ID, API_HASH,
-                            proxy=proxy)
-        running_clients[phone] = client
+            client = TelegramClient(session_name, API_ID, API_HASH,
+                                proxy=proxy)
+            running_clients[phone] = client
+    except Exception as e:
+        logger.error(e)
 
     @client.on(events.NewMessage)
     async def new_message_handler(event):
@@ -353,7 +356,7 @@ async def send_message(data: SendMessageRequest):
     """
     sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
     client = await get_create_client(sender_phone)
-
+    logger.debug(client)
     try:
         await client(UpdateStatusRequest(offline=False))
         await client.connect()
