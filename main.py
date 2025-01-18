@@ -114,7 +114,7 @@ async def get_create_client(phone):
 
 
 
-@app.get("/send-code/")
+@app.post("/send-code/")
 async def send_code(phone: str):
     phone = phone.strip().replace("+", "")
     logger.info(f"Получен запрос на отправку кода для телефона: {phone}")
