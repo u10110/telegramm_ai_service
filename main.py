@@ -67,7 +67,7 @@ async def startup_event():
             session_name = filename.split('.')[0]
             phone = session_name.split('_')[1]
             client = await get_create_client(phone)
-            await client.start()
+            await client.run_until_disconnected()
 
 
 async def get_create_client(phone):
@@ -79,7 +79,7 @@ async def get_create_client(phone):
 
             client = TelegramClient(session_name, API_ID, API_HASH,
                                 proxy=proxy)
-            logger.info(f"Запущен клиент : {phone}")
+            logger.info(f" инициализирован  клиент : {phone}")
             running_clients[phone] = client
         else:
             logger.info(f"Клиент выгружен из памяти : {phone}")
