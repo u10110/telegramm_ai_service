@@ -103,7 +103,7 @@ async def get_create_client(phone):
                     "username": user_data['username'],
                     # "channel": event.message.peer_id,
                     "via_bot_id": event.via_bot_id,
-                    "message": event.raw_text,
+                    "text": event.raw_text,
                     "to_id": {"user_id": event.to_id.user_id},
                     "from_id": {"user_id": event.from_id.user_id},
                     "user_id": user_data['user_id'],
