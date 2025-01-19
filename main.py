@@ -109,12 +109,13 @@ async def get_create_client(phone):
                     "user_id": user_data['user_id'],
                     "channel_phone": session_name.split('_')[1]
                 }
-                await producer.produce('new-message-events', value=json.dumps(payload),
+                producer.produce('new-message-events', value=json.dumps(payload),
                                        callback=delivery_callback)
-                await producer.poll(1000)
-                await producer.flush()
+                producer.poll(1000)
+                producer.flush()
 
             except Exception as e:
+                logger.error(traceback.format_exc())
                 logger.error(e)
 
     return client
