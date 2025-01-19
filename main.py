@@ -88,7 +88,7 @@ async def get_create_client(phone):
     @client.on(events.NewMessage)
     async def new_message_handler(event):
 
-        logger.info(f"Message peceiver: {session_name} {event.raw_text}")
+        logger.info(f"Message receiver:  {event.raw_text}")
         logger.debug(event)
 
         if event.from_id and isinstance(event.from_id, PeerUser) and \
