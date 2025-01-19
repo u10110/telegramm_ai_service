@@ -67,9 +67,7 @@ async def startup_event():
             session_name = filename.split('.')[0]
             phone = session_name.split('_')[1]
             client = await get_create_client(phone)
-            await client.start()
-            await client.run_until_disconnected()
-
+            await client.connect()
 
 
 async def get_create_client(phone):
