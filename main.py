@@ -78,7 +78,10 @@ async def get_create_client(phone):
 
             client = TelegramClient(session_name, API_ID, API_HASH,
                                 proxy=proxy)
+            logger.info(f"Запущен клиент : {phone}")
             running_clients[phone] = client
+        else:
+            logger.info(f"Клиент выгружен из памяти : {phone}")
     except Exception as e:
         logger.error(e)
 
