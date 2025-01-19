@@ -109,8 +109,7 @@ async def get_create_client(phone):
                     "user_id": user_data['user_id'],
                     "channel_phone": session_name.split('_')[1]
                 }
-                producer.produce('new-message-events', value=json.dumps(payload),
-                                       callback=delivery_callback)
+                producer.produce('new-message-events', value=json.dumps(payload))
                 producer.poll(1000)
                 producer.flush()
 
