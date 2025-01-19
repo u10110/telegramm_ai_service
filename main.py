@@ -104,6 +104,7 @@ async def get_create_client(phone):
                     # "channel": event.message.peer_id,
                     "via_bot_id": event.via_bot_id,
                     "text": event.raw_text,
+                    "sender_id":  event.from_id.user_id,
                     "to_id": {"user_id": event.to_id.user_id},
                     "from_id": {"user_id": event.from_id.user_id},
                     "user_id": user_data['user_id'],
@@ -212,7 +213,7 @@ async def get_users(phone: str):
     print(client)
 
     try:
-        await client.connect()
+
         logger.info("Клиент Telegram подключён")
 
         dialogs = await client.get_dialogs()
@@ -229,7 +230,7 @@ async def get_users(phone: str):
         logger.error(f"Ошибка при получении списка пользователей: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+
         logger.info("Клиент Telegram отключён")
 
 
@@ -323,7 +324,7 @@ async def get_messages(data: GetMessagesRequest):
 
     try:
         # Подключаем клиента
-        await client.connect()
+
         logger.info("Клиент Telegram подключён")
 
         # ID канала или пользователя
@@ -337,7 +338,7 @@ async def get_messages(data: GetMessagesRequest):
         logger.error(f"Ошибка при получении сообщений: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+
         logger.info("Клиент Telegram отключён")
 
 
@@ -363,7 +364,7 @@ async def send_message(data: SendMessageRequest):
     logger.debug(client)
     try:
 
-        await client.connect()
+
         #await client(UpdateStatusRequest(offline=False))
         # Определяем сущность пользователя по username
         try:
@@ -387,5 +388,5 @@ async def send_message(data: SendMessageRequest):
         logger.error(f"Ошибка при отправке сообщения: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
-        await client.disconnect()
+
         logger.info(f"Клиент Telegram {sender_phone} отключён")
