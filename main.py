@@ -208,6 +208,7 @@ async def verify_code(data: VerifyCodeRequest):
     finally:
         await client.disconnect()
         logger.info("Клиент Telegram отключён")
+        await get_create_client(phone)
 
 
 @app.get("/get-users/")
