@@ -78,7 +78,7 @@ async def get_create_client(phone):
 
             client = TelegramClient(session_name, API_ID, API_HASH,
                                 proxy=proxy)
-            client.connect()
+            await client.connect()
             logger.info(f" инициализирован  клиент : {phone}")
             running_clients[phone] = client
         else:
