@@ -96,21 +96,19 @@ async def get_create_client(phone):
                 event.to_id and isinstance(event.to_id, PeerUser) and producer is not None:
 
             try:
-                user_data = await get_user_id_and_name_from_message(client, event)
-                logger.debug(user_data)
                 sender = await event.get_sender()
                 logger.debug(sender.username)
 
                 payload = {
                     "id": event.message.id,
                     "date": event.date.isoformat(),
-                    "username": user_data['username'],
+                    "username": sender.username,
                     # "channel": event.message.peer_id,
                     "via_bot_id": event.via_bot_id,
                     "text": event.raw_text,
                     "sender_id":  event.from_id.user_id,
                     "from_id": {"user_id": event.from_id.user_id},
-                    "user_id": user_data['user_id'],
+                    "user_id": event.from_id.user_id,
                     "channel_phone": phone.strip().replace("+", "")
                 }
                 producer.produce('new-message-events', value=json.dumps(payload))
