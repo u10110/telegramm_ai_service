@@ -94,9 +94,13 @@ async def get_create_client(phone):
 
         if event.from_id and isinstance(event.from_id, PeerUser) and \
                 event.to_id and isinstance(event.to_id, PeerUser) and producer is not None:
-            user_data = await get_user_id_and_name_from_message(client, event)
-            logger.debug(user_data)
+
             try:
+                user_data = await get_user_id_and_name_from_message(client, event)
+                logger.debug(user_data)
+                sender = await event.get_sender()
+                logger.debug(sender.username)
+
                 payload = {
                     "id": event.message.id,
                     "date": event.date.isoformat(),
