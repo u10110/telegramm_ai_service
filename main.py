@@ -78,7 +78,7 @@ async def get_create_client(phone):
 
             client = TelegramClient(session_name, API_ID, API_HASH,
                                 proxy=proxy)
-            await client.connect()
+            client.connect()
             logger.info(f" инициализирован  клиент : {phone}")
             running_clients[phone] = client
         else:
@@ -98,14 +98,13 @@ async def get_create_client(phone):
             logger.debug(user_data)
             try:
                 payload = {
-                    "id": event.id,
+                    "id": event.message.id,
                     "date": event.date.isoformat(),
                     "username": user_data['username'],
                     # "channel": event.message.peer_id,
                     "via_bot_id": event.via_bot_id,
                     "text": event.raw_text,
                     "sender_id":  event.from_id.user_id,
-                    "to_id": {"user_id": event.to_id.user_id},
                     "from_id": {"user_id": event.from_id.user_id},
                     "user_id": user_data['user_id'],
                     "channel_phone": phone.strip().replace("+", "")
