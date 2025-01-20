@@ -66,7 +66,8 @@ async def startup_event():
         for filename in filenames:
             session_name = filename.split('.')[0]
             phone = session_name.split('_')[1]
-            await get_create_client(phone)
+            client = await get_create_client(phone)
+            await client.connect()
 
 
 async def get_create_client(phone):
@@ -78,7 +79,7 @@ async def get_create_client(phone):
 
             client = TelegramClient(session_name, API_ID, API_HASH,
                                 proxy=proxy)
-            await client.connect()
+
             logger.info(f" инициализирован  клиент : {phone}")
             running_clients[phone] = client
         else:
