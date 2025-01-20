@@ -108,7 +108,7 @@ async def get_create_client(phone):
                     "to_id": {"user_id": event.to_id.user_id},
                     "from_id": {"user_id": event.from_id.user_id},
                     "user_id": user_data['user_id'],
-                    "channel_phone": session_name.split('_')[1]
+                    "channel_phone": phone.strip().replace("+", "")
                 }
                 producer.produce('new-message-events', value=json.dumps(payload))
                 producer.flush()
