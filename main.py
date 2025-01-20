@@ -77,8 +77,7 @@ async def get_create_client(phone):
         if client is None:
             session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
-            client = TelegramClient(session_name, API_ID, API_HASH,
-                                proxy=proxy)
+            client = create_client(session_name)
 
             logger.info(f" инициализирован  клиент : {phone}")
             running_clients[phone] = client
@@ -86,6 +85,14 @@ async def get_create_client(phone):
             logger.info(f"Клиент выгружен из памяти : {phone}")
     except Exception as e:
         logger.error(e)
+
+    return client
+
+
+def create_client(session_name):
+
+    client = TelegramClient(session_name, API_ID, API_HASH,
+                            proxy=proxy)
 
     @client.on(events.NewMessage)
     async def new_message_handler(event):
