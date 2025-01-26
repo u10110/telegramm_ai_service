@@ -400,3 +400,49 @@ async def send_message(data: SendMessageRequest):
     finally:
 
         logger.info(f"Клиент Telegram {sender_phone} отключён")
+
+
+
+
+@app.post("/get-sessions/")
+async def get_sessions(data: GetMessagesRequest):
+    """
+    Получает все сообщения из указанного канала с полными данными.
+    """
+
+    try:
+        # Подключаем клиента
+
+        logger.info("Получение списк сессий")
+        all_sessions = []
+        for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
+            for filename in filenames:
+                session_name = filename.split('.')[0]
+                phone = session_name.split('_')[1]
+                all_sessions.append({
+                    'phone': phone
+                })
+
+
+        return { "sessions": all_sessions }
+    except Exception as e:
+        logger.error(f"Ошибка при получении сессий: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/log-out/")
+async def get_sessions(data: GetMessagesRequest):
+
+    phone = data.phone.strip().replace("+", "")
+    client = await get_create_client(phone)
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
+    try:
+
+        result = await client.log_out()
+        if os.path.exists(session_name + ".session"):
+            os.remove(session_name + ".session")
+        del running_clients[phone]
+        return {"logout": result}
+    except Exception as e:
+        logger.error(f"Ошибка при получении сессий: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
