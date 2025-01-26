@@ -434,16 +434,14 @@ async def get_sessions(data: GetMessagesRequest):
 
 
 @app.post("/log-out/")
-async def get_sessions(data: GetMessagesRequest):
+async def log_out(data: GetMessagesRequest):
 
     phone = data.phone.strip().replace("+", "")
     client = await get_create_client(phone)
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
     try:
 
         result = await client.log_out()
-        if os.path.exists(session_name + ".session"):
-            os.remove(session_name + ".session")
+        logger.debug(result)
         del running_clients[phone]
         return {"logout": result}
     except Exception as e:
