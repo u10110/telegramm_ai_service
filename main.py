@@ -80,7 +80,7 @@ async def get_create_client(phone):
         if client is None:
             session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
-            client = create_client(phone, session_name)
+            client = await create_client(phone, session_name)
 
             logger.info(f" инициализирован  клиент : {phone}")
             running_clients[phone] = client
@@ -92,7 +92,7 @@ async def get_create_client(phone):
         return client
 
 
-def create_client(phone, session_name):
+async def create_client(phone, session_name):
 
     client = TelegramClient(session_name, API_ID, API_HASH,
                             proxy=proxy)
@@ -128,6 +128,8 @@ def create_client(phone, session_name):
             except Exception as e:
                 logger.error(traceback.format_exc())
                 logger.error(e)
+
+    await client.catch_up()
 
     return client
 
