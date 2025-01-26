@@ -67,7 +67,10 @@ async def startup_event():
             session_name = filename.split('.')[0]
             phone = session_name.split('_')[1]
             client = await get_create_client(phone)
-            await client.connect()
+            try:
+                await client.connect()
+            except Exception as e:
+                logger.error(f"Клиент выгружен из памяти : {phone}")
 
 
 async def get_create_client(phone):
@@ -84,9 +87,9 @@ async def get_create_client(phone):
         else:
             logger.info(f"Клиент выгружен из памяти : {phone}")
     except Exception as e:
-        logger.error(e)
-
-    return client
+        logger.error(f"Ошибка инициальизации клиента {e}")
+    finally:
+        return client
 
 
 def create_client(phone, session_name):
