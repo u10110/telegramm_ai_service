@@ -221,6 +221,7 @@ async def get_users(phone: str):
     """
     Получает список всех пользователей, с которыми велась переписка.
     """
+    logger.info('get-users')
     phone = phone.strip().replace("+", "")
     session_name = os.path.join(SESSION_DIR, "session_" + phone)
     print(f"session_name {session_name}")
@@ -233,7 +234,7 @@ async def get_users(phone: str):
 
         dialogs = await client.get_dialogs()
         for dialog in dialogs:
-            print(f"Dialog: {dialog.id}, Name: {dialog.name}, Entity: {type(dialog.entity)}")
+            logger.info(f"Dialog: {dialog.id}, Name: {dialog.name}, Entity: {type(dialog.entity)}")
 
         users = [
             {"id": dialog.id, "name": dialog.name}  # ! dialog.name это имя аккаунта а не username
