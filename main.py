@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
 import time
-import requests
+import traceback
 
 from confluent_kafka import Producer
 import json
@@ -375,10 +375,12 @@ async def send_message(data: SendMessageRequest):
     - `data.username`: Ник пользователя, которому отправляем (например, @username).
     - `data.message`: Сообщение.
     """
-    sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
-    client = await get_create_client(sender_phone)
-    logger.debug(client)
+
     try:
+
+        sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
+        client = await get_create_client(sender_phone)
+        logger.debug(client)
 
 
         #await client(UpdateStatusRequest(offline=False))
@@ -387,6 +389,7 @@ async def send_message(data: SendMessageRequest):
             entity = await client.get_entity(data.username)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except Exception as e:
+            logger.error(traceback.format_exc())
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
             raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
 
@@ -401,6 +404,7 @@ async def send_message(data: SendMessageRequest):
         return {"message": "Сообщение успешно отправлено", "success": True}
 
     except Exception as e:
+        logger.error(traceback.format_exc())
         logger.error(f"Ошибка при отправке сообщения: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
