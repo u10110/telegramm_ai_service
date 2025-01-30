@@ -394,7 +394,7 @@ async def send_message(data: SendMessageRequest):
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
             raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
 
-        def callback(async_client):
+        async def callback(async_client):
 
             await async_client(functions.messages.SetTypingRequest(
                 peer=entity,
