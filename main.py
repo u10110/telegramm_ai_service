@@ -406,7 +406,7 @@ async def send_message(data: SendMessageRequest):
             logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
 
         #time.sleep(5)
-        asyncio.sleep(5, result=callback(client))
+        await asyncio.sleep(5, result=callback(client))
 
         return {"message": "Сообщение успешно отправлено", "success": True}
 
