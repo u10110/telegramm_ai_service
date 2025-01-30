@@ -9,6 +9,7 @@ from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
 import time
 import traceback
+import asyncio
 
 from confluent_kafka import Producer
 import json
@@ -393,14 +394,20 @@ async def send_message(data: SendMessageRequest):
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
             raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
 
-        await client(functions.messages.SetTypingRequest(
-            peer=entity,
-            action=types.SendMessageTypingAction()
-        ))
+        def callback(async_client):
+
+            await async_client(functions.messages.SetTypingRequest(
+                peer=entity,
+                action=types.SendMessageTypingAction()
+            ))
+
+            # Отправка сообщения
+            msg = await async_client.send_message(entity, data.message)
+            logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
+
         #time.sleep(5)
-        # Отправка сообщения
-        msg = await client.send_message(entity, data.message)
-        logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
+        asyncio.sleep(5, result=callback(client))
+
         return {"message": "Сообщение успешно отправлено", "success": True}
 
     except Exception as e:
