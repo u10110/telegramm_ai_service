@@ -253,7 +253,7 @@ async def get_users(phone: str):
 
 class GetMessagesRequest(BaseModel):
     phone: str
-    user_id: int
+    user_id: str
     limit: int
 
 
