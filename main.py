@@ -236,6 +236,7 @@ async def verify_code(data: VerifyCodeRequest):
                     'photo': acc_info.photo
             })}
     except Exception as e:
+        logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
@@ -418,6 +419,7 @@ async def send_message(data: SendMessageRequest):
         # Определяем сущность пользователя по username
         try:
             entity = await client.get_entity(data.username)
+            time.sleep(2)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -439,6 +441,15 @@ async def send_message(data: SendMessageRequest):
         try:
             message = await asyncio.sleep(5, result=await callback(client))
             time.sleep(2)
+
+            sender = None
+            if message.from_id:
+                sender = message.from_id.user_id
+
+            user_id = None
+            if message.from_id:
+                user_id = message.from_id.user_id
+
             return {"message": "Сообщение успешно отправлено", "success": True,
                     "result": json.dumps({
                         "id": message.id,
@@ -447,8 +458,8 @@ async def send_message(data: SendMessageRequest):
                         # "channel": event.message.peer_id,
                         "via_bot_id": message.via_bot_id,
                         "text": message.raw_text,
-                        "sender_id":  message.from_id.user_id,
-                        "from_id": {"user_id": message.from_id.user_id},
+                        "sender_id":  sender,
+                        "from_id": {"user_id": user_id},
                         "user_id": message.from_id.user_id,
                         "channel_phone": sender_phone
                     })}
