@@ -51,11 +51,20 @@ def delivery_callback(err, msg):
 
 APP_HOST = os.getenv("APP_HOST")
 
-proxy = {
+proxy_ru = {
     'proxy_type': python_socks.ProxyType.HTTP,
     'addr': '185.162.130.86',
     'port': 10000,
     'username': '8zLRaaXSXfKEr7pQAPoh',
+    'password': 'RNW78Fm5',
+    'rdns': True
+}
+
+proxy_uae = {
+    'proxy_type': python_socks.ProxyType.HTTP,
+    'addr': '185.162.130.86',
+    'port': 10000,
+    'username': 'EKQUyXqBAwCOYDdvHtMR',
     'password': 'RNW78Fm5',
     'rdns': True
 }
@@ -94,6 +103,9 @@ async def get_create_client(phone):
 
 
 async def create_client(phone, session_name):
+    proxy = proxy_ru
+    if phone.startswith('971') and len(phone) == '12':
+        proxy = proxy_uae
 
     client = TelegramClient(session_name, API_ID, API_HASH,
                             proxy=proxy)
