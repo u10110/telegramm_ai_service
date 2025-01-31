@@ -406,11 +406,12 @@ async def send_message(data: SendMessageRequest):
             ))
             time.sleep(5)
             # Отправка сообщения
-            msg = await async_client.send_message(entity, data.message)
+            await async_client.send_message(entity, data.message)
             logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
 
         try:
             await asyncio.sleep(5, result=await callback(client))
+            print(msg)
             return {"message": "Сообщение успешно отправлено", "success": True, "result": msg}
         except Exception as e:
             logger.error(traceback.format_exc())
