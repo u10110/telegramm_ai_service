@@ -397,8 +397,6 @@ async def send_message(data: SendMessageRequest):
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
             raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
 
-        msg = ''
-
         async def callback(async_client):
 
             await async_client(functions.messages.SetTypingRequest(
@@ -409,10 +407,11 @@ async def send_message(data: SendMessageRequest):
             # Отправка сообщения
             msg = await async_client.send_message(entity, data.message)
             logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
+            return msg
 
         try:
-            await asyncio.sleep(5, result=await callback(client))
-            return {"message": "Сообщение успешно отправлено", "success": True, "result": msg}
+            result = await asyncio.sleep(5, result=await callback(client))
+            return {"message": "Сообщение успешно отправлено", "success": True, "result": result}
         except Exception as e:
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500)
