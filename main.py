@@ -105,6 +105,7 @@ async def get_create_client(phone):
 async def create_client(phone, session_name):
     proxy = proxy_ru
     if phone.startswith('971') and len(phone) == '12':
+        logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
     client = TelegramClient(session_name, API_ID, API_HASH,
@@ -167,6 +168,7 @@ async def send_code(phone: str):
 
     proxy = proxy_ru
     if phone.startswith('971') and len(phone) == '12':
+        logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
     client = TelegramClient(session_name, API_ID, API_HASH,
@@ -209,6 +211,7 @@ async def verify_code(data: VerifyCodeRequest):
 
     proxy = proxy_ru
     if phone.startswith('971') and len(phone) == '12':
+        logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
     client = TelegramClient(session_name, API_ID, API_HASH,
@@ -470,7 +473,7 @@ async def send_message(data: SendMessageRequest):
 
     except Exception as e:
         logger.error(traceback.format_exc())
-        logger.error(f"Ошибка при отправке сообщения: {str(e)}")
+        logger.error(f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
         raise HTTPException(status_code=500, detail=str(e))
     finally:
 
