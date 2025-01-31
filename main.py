@@ -165,6 +165,10 @@ async def send_code(phone: str):
             logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
 
+    proxy = proxy_ru
+    if phone.startswith('971') and len(phone) == '12':
+        proxy = proxy_uae
+
     client = TelegramClient(session_name, API_ID, API_HASH,
                             proxy=proxy)
 
@@ -202,6 +206,10 @@ async def verify_code(data: VerifyCodeRequest):
     code = data.code
 
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
+
+    proxy = proxy_ru
+    if phone.startswith('971') and len(phone) == '12':
+        proxy = proxy_uae
 
     client = TelegramClient(session_name, API_ID, API_HASH,
                             proxy=proxy)
