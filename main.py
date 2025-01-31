@@ -207,7 +207,14 @@ async def verify_code(data: VerifyCodeRequest):
         await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
         logger.info(f"Код подтверждён для телефона: {phone}")
         del phone_hash_store[phone]
-        return {"message": f"Авторизация завершена для номера {phone}", "success": True}
+        acc_info = await client.get_me()
+        return {"message": f"Авторизация завершена для номера {phone}",
+                "success": True, 'account': json.dumps({
+                    'id': acc_info.id,
+                    'fio': acc_info.first_name + ' ' + acc_info.last_name,
+                    'color': acc_info.color,
+                    'photo': acc_info.photo
+            })}
     except Exception as e:
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -412,7 +419,7 @@ async def send_message(data: SendMessageRequest):
         try:
             message = await asyncio.sleep(5, result=await callback(client))
             return {"message": "Сообщение успешно отправлено", "success": True,
-                    "result": {
+                    "result": json.dumps({
                         "id": message.id,
                         "date": message.isoformat(),
                         "username": data.username,
@@ -423,7 +430,7 @@ async def send_message(data: SendMessageRequest):
                         "from_id": {"user_id": message.from_id.user_id},
                         "user_id": message.from_id.user_id,
                         "channel_phone": sender_phone
-                    }}
+                    })}
         except Exception as e:
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500)
