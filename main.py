@@ -254,7 +254,7 @@ async def get_users(phone: str):
 class GetMessagesRequest(BaseModel):
     phone: str
     user_id: str
-    offset_date: datetime,
+    offset_date: str,
     offset_id: int,
     limit: int
 
