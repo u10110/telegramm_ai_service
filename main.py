@@ -438,6 +438,7 @@ async def send_message(data: SendMessageRequest):
 
         try:
             message = await asyncio.sleep(5, result=await callback(client))
+            time.sleep(2)
             return {"message": "Сообщение успешно отправлено", "success": True,
                     "result": json.dumps({
                         "id": message.id,
@@ -451,6 +452,7 @@ async def send_message(data: SendMessageRequest):
                         "user_id": message.from_id.user_id,
                         "channel_phone": sender_phone
                     })}
+
         except Exception as e:
             logger.error(traceback.format_exc())
             raise HTTPException(status_code=500)
