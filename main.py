@@ -461,10 +461,16 @@ async def get_sessions(data: GetMessagesRequest):
             for filename in filenames:
                 session_name = filename.split('.')[0]
                 phone = session_name.split('_')[1]
-                all_sessions.append({
-                    'phone': phone
-                })
 
+                client = await get_create_client(phone)
+                acc_info = await client.get_me()
+                all_sessions.append(json.dumps({
+                    'id': acc_info.id,
+                    'fio': acc_info.first_name + ' ' + acc_info.last_name,
+                    'color': acc_info.color,
+                    'photo': acc_info.photo,
+                    'phone': phone
+                }))
 
         return { "sessions": all_sessions }
     except Exception as e:
