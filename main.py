@@ -398,6 +398,7 @@ async def send_message(data: SendMessageRequest):
             raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
 
         msg = ''
+
         async def callback(async_client):
 
             await async_client(functions.messages.SetTypingRequest(
@@ -406,7 +407,7 @@ async def send_message(data: SendMessageRequest):
             ))
             time.sleep(5)
             # Отправка сообщения
-            msg = ''await async_client.send_message(entity, data.message)
+            msg = await async_client.send_message(entity, data.message)
             logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
 
         try:
