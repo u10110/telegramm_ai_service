@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
 import time
+from telethon.errors import SessionPasswordNeededError
 import traceback
 import asyncio
 
@@ -227,17 +228,24 @@ async def verify_code(data: VerifyCodeRequest):
 
         await client.connect()
         logger.info("Клиент Telegram подключён")
+        #try:
         await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
+        #except SessionPasswordNeededError e:
+        #    return {"message": f"Авторизация завершена для номера {phone}",
+        #            "success": True,
         logger.info(f"Код подтверждён для телефона: {phone}")
-        del phone_hash_store[phone]
         acc_info = await client.get_me()
+        account = {}
+        if acc_info:
+            account = {
+                'id': acc_info.id,
+                'fio': acc_info.first_name + ' ' + acc_info.last_name,
+                'color': acc_info.color,
+                'photo': acc_info.photo
+            }
+        del phone_hash_store[phone]
         return {"message": f"Авторизация завершена для номера {phone}",
-                "success": True, 'account': json.dumps({
-                    'id': acc_info.id,
-                    'fio': acc_info.first_name + ' ' + acc_info.last_name,
-                    'color': acc_info.color,
-                    'photo': acc_info.photo
-            })}
+                "success": True, 'account':  json.dumps(account)}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
