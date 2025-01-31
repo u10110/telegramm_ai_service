@@ -104,7 +104,7 @@ async def get_create_client(phone):
 
 async def create_client(phone, session_name):
     proxy = proxy_ru
-    if phone.startswith('971') and len(phone) == '12':
+    if phone.startswith('971') and len(phone) == 12:
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
@@ -167,7 +167,7 @@ async def send_code(phone: str):
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
 
     proxy = proxy_ru
-    if phone.startswith('971') and len(phone) == '12':
+    if phone.startswith('971') and len(phone) == 12:
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
@@ -210,7 +210,7 @@ async def verify_code(data: VerifyCodeRequest):
     logger.info(f"Получен запрос на подтверждение кода для телефона: {phone}")
 
     proxy = proxy_ru
-    if phone.startswith('971') and len(phone) == '12':
+    if phone.startswith('971') and len(phone) == 12:
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
