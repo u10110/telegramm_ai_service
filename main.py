@@ -483,6 +483,7 @@ async def get_sessions(data: GetMessagesRequest):
                 phone = session_name.split('_')[1]
 
                 client = await get_create_client(phone)
+                time.sleep(2)
                 acc_info = await client.get_me()
                 all_sessions.append(json.dumps({
                     'id': acc_info.id,
