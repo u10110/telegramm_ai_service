@@ -411,7 +411,7 @@ async def send_message(data: SendMessageRequest):
 
         #time.sleep(5)
         result = await asyncio.sleep(5, result=await callback(client))
-
+        logger.debug(result)
         return {"message": "Сообщение успешно отправлено", "success": True, "result": result}
 
     except Exception as e:
