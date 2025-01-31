@@ -172,10 +172,10 @@ async def send_code(phone: str):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
-    client = TelegramClient(session_name, API_ID, API_HASH,
-                            proxy=proxy)
 
     try:
+        client = TelegramClient(session_name, API_ID, API_HASH,
+                                proxy=proxy)
 
         await client.connect()
         logger.info("Клиент Telegram подключён")
@@ -430,7 +430,6 @@ async def send_message(data: SendMessageRequest):
         # Определяем сущность пользователя по username
         try:
             entity = await client.get_entity(data.username)
-            time.sleep(2)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except Exception as e:
             logger.error(traceback.format_exc())
@@ -451,7 +450,6 @@ async def send_message(data: SendMessageRequest):
 
         try:
             message = await asyncio.sleep(5, result=await callback(client))
-            time.sleep(2)
 
             sender = None
             if message.from_id:
@@ -507,7 +505,6 @@ async def get_sessions(data: GetMessagesRequest):
                 phone = session_name.split('_')[1]
 
                 client = await get_create_client(phone)
-                time.sleep(2)
                 acc_info = await client.get_me()
                 all_sessions.append(json.dumps({
                     'id': acc_info.id,
