@@ -234,18 +234,18 @@ async def verify_code(data: VerifyCodeRequest):
         #    return {"message": f"Авторизация завершена для номера {phone}",
         #            "success": True,
         logger.info(f"Код подтверждён для телефона: {phone}")
-        acc_info = await client.get_me()
-        account = {}
-        if acc_info:
-            account = {
-                'id': acc_info.id,
-                'fio': acc_info.first_name + ' ' + acc_info.last_name,
-                'color': acc_info.color,
-                'photo': acc_info.photo
-            }
+        #acc_info = await client.get_me()
+        #account = {}
+        #if acc_info:
+        #    account = {
+        #        'id': acc_info.id,
+        #        'fio': acc_info.first_name + ' ' + acc_info.last_name,
+        #        'color': acc_info.color,
+        #        'photo': acc_info.photo
+        #    }
         del phone_hash_store[phone]
         return {"message": f"Авторизация завершена для номера {phone}",
-                "success": True, 'account':  json.dumps(account)}
+                "success": True}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
