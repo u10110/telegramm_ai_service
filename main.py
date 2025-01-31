@@ -421,7 +421,7 @@ async def send_message(data: SendMessageRequest):
             return {"message": "Сообщение успешно отправлено", "success": True,
                     "result": json.dumps({
                         "id": message.id,
-                        "date": message.isoformat(),
+                        "date": message.date.isoformat(),
                         "username": data.username,
                         # "channel": event.message.peer_id,
                         "via_bot_id": message.via_bot_id,
