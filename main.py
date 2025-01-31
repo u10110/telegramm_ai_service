@@ -254,11 +254,12 @@ async def get_users(phone: str):
 class GetMessagesRequest(BaseModel):
     phone: str
     user_id: str
-    offset_date: datetime
+    offset_date: datetime,
+    offset_id: int,
     limit: int
 
 
-async def get_all_messages(client, channel_id, offset_date, limit):
+async def get_all_messages(client, channel_id, offset_date, offset_id,  limit):
     try:
         if not channel_id:
             raise ValueError("channel_id не может быть None.")
@@ -269,7 +270,7 @@ async def get_all_messages(client, channel_id, offset_date, limit):
             peer=entity,
             limit=limit,
             offset_date=offset_date,
-            offset_id=0,
+            offset_id=offset_id,
             max_id=0,
             min_id=0,
             add_offset=0,
@@ -349,7 +350,8 @@ async def get_messages(data: GetMessagesRequest):
         channel_id = data.user_id
 
         # Получаем все сообщения
-        all_messages = await get_all_messages(client, channel_id, data.offset_date,  data.limit)
+        all_messages = await get_all_messages(client, channel_id, data.offset_date,
+                                              data.offset_id, data.limit)
 
         return {"messages": all_messages}
     except Exception as e:
