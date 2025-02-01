@@ -1,0 +1,10 @@
+services:
+  telegramm_ai_service:
+    image: registry.mplab.io/telegramm_ai_service:latest
+    container_name: telegramm_ai_service
+    restart: always
+    volumes:
+      - /sessions:/app/sessions
+    ports:
+      - 8088:8001
+    env_file: .env-dev

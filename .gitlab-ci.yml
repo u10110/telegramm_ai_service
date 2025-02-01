@@ -1,5 +1,6 @@
 stages:
   - build
+  - deploy-dev
   - deploy
 
 #variables:
@@ -15,7 +16,7 @@ build:telegramm_ai_service:
   image:
     name: docker:stable
     entrypoint: ["/bin/sh", "-c"]
-  tags: [app-ea]
+  tags: [infra]
   only:
     - main
   variables:
@@ -42,3 +43,17 @@ deploy:
     - docker compose -f docker-compose.yaml -p telegramm_ai_service down --timeout 10
     - docker compose -f docker-compose.yaml -p telegramm_ai_service up -d
     - docker image prune -a -f
+
+deploy_dev:
+  stage: deploy
+  tags: [eliment-dev]
+  only:
+    - main
+  image:
+    name: docker/compose
+    entrypoint: ["/bin/sh", "-c"]
+  script:
+    - IMAGE_TAG=latest docker compose -f docker-compose-dev.yml -p telethon-service down --timeout 10
+    - IMAGE_TAG=latest docker compose -f docker-compose-dev.yml  pull telethon-service
+    - IMAGE_TAG=latest docker compose -f docker-compose-dev.yml  up -d telethon-service
+    -

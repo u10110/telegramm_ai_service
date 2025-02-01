@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
 import time
-from telethon.errors import SessionPasswordNeededError
+from telethon.errors import SessionPasswordNeededError, UserDeactivatedBanError
 import traceback
 import asyncio
 
@@ -43,12 +43,14 @@ running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
 
+
 def delivery_callback(err, msg):
     if err:
         print('ERROR: Message failed delivery: {}'.format(err))
     else:
         print("Produced event to topic {topic}: key = {key:12} value = {value:12}".format(
             topic=msg.topic(), key=msg.key().decode('utf-8'), value=msg.value().decode('utf-8')))
+
 
 APP_HOST = os.getenv("APP_HOST")
 
@@ -132,7 +134,7 @@ async def create_client(phone, session_name):
                     # "channel": event.message.peer_id,
                     "via_bot_id": event.via_bot_id,
                     "text": event.raw_text,
-                    "sender_id":  event.from_id.user_id,
+                    "sender_id": event.from_id.user_id,
                     "from_id": {"user_id": event.from_id.user_id},
                     "user_id": event.from_id.user_id,
                     "channel_phone": phone.strip().replace("+", "")
@@ -147,9 +149,6 @@ async def create_client(phone, session_name):
     await client.catch_up()
 
     return client
-
-
-
 
 
 @app.post("/send-code/")
@@ -172,7 +171,6 @@ async def send_code(phone: str):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
-
     try:
         client = TelegramClient(session_name, API_ID, API_HASH,
                                 proxy=proxy)
@@ -182,7 +180,6 @@ async def send_code(phone: str):
         if not await client.is_user_authorized():
             result = await client.send_code_request(phone)
             phone_hash_store[phone] = result.phone_code_hash
-            print(phone_hash_store)
             logger.info(f"Код успешно отправлен, phone_code_hash сохранён для телефона: {phone}")
             return {"message": f"Код отправлен на номер {phone}", "success": True}
         logger.info("Пользователь уже авторизован")
@@ -228,24 +225,15 @@ async def verify_code(data: VerifyCodeRequest):
 
         await client.connect()
         logger.info("Клиент Telegram подключён")
-        #try:
-        await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
-        #except SessionPasswordNeededError e:
-        #    return {"message": f"Авторизация завершена для номера {phone}",
-        #            "success": True,
+        try:
+            me = await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
+        except SessionPasswordNeededError as e:
+            return {"message": f"Необходимо ввести облачный пароль. на аккаунте двузфакторная авторизация. {phone}",
+                    "success": False, "require_password": True}
         logger.info(f"Код подтверждён для телефона: {phone}")
-        #acc_info = await client.get_me()
-        #account = {}
-        #if acc_info:
-        #    account = {
-        #        'id': acc_info.id,
-        #        'fio': acc_info.first_name + ' ' + acc_info.last_name,
-        #        'color': acc_info.color,
-        #        'photo': acc_info.photo
-        #    }
         del phone_hash_store[phone]
         return {"message": f"Авторизация завершена для номера {phone}",
-                "success": True}
+                "success": True, 'account': me }
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
@@ -254,6 +242,45 @@ async def verify_code(data: VerifyCodeRequest):
         await client.disconnect()
         logger.info("Клиент Telegram отключён")
         await get_create_client(phone)
+
+
+@app.post("/input-password/")
+async def input_password(data: VerifyCodeRequest):
+    phone = data.phone
+    password = data.password
+    phone = phone.strip().replace("+", "")
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
+
+    logger.info(f"Получен запрос на ввод пароля для телефона: {phone}")
+
+    proxy = proxy_ru
+    if phone.startswith('971') and len(phone) == 12:
+        logger.debug(f"{phone} использует прокси ОАЭ")
+        proxy = proxy_uae
+
+    client = TelegramClient(session_name, API_ID, API_HASH,
+                            proxy=proxy)
+
+    try:
+
+        await client.connect()
+        logger.info("Клиент Telegram подключён")
+        me = await client.sign_in(phone, password=password)
+
+        logger.info(f"Пароль введен для телефона: {phone}")
+        del phone_hash_store[phone]
+        return {"message": f"Авторизация завершена для номера {phone}",
+                "success": True, 'account': me}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка при подтверждении кода: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        await client.disconnect()
+        logger.info("Клиент Telegram отключён")
+        await get_create_client(phone)
+
+
 
 
 @app.get("/get-users/")
@@ -298,7 +325,7 @@ class GetMessagesRequest(BaseModel):
     limit: int
 
 
-async def get_all_messages(client, channel_id, offset_date, offset_id,  limit):
+async def get_all_messages(client, channel_id, offset_date, offset_id, limit):
     try:
         if not channel_id:
             raise ValueError("channel_id не может быть None.")
@@ -425,12 +452,14 @@ async def send_message(data: SendMessageRequest):
         client = await get_create_client(sender_phone)
         logger.debug(client)
 
-
-        #await client(UpdateStatusRequest(offline=False))
+        # await client(UpdateStatusRequest(offline=False))
         # Определяем сущность пользователя по username
         try:
             entity = await client.get_entity(data.username)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
+        except UserDeactivatedBanError as b:
+            logger.error(f"Аккаунт забанен {data.username}: {e}")
+            raise HTTPException(status_code=500, detail="banned")
         except Exception as e:
             logger.error(traceback.format_exc())
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
@@ -467,7 +496,7 @@ async def send_message(data: SendMessageRequest):
                         # "channel": event.message.peer_id,
                         "via_bot_id": message.via_bot_id,
                         "text": message.raw_text,
-                        "sender_id":  sender,
+                        "sender_id": sender,
                         "from_id": {"user_id": user_id},
                         "user_id": message.from_id.user_id,
                         "channel_phone": sender_phone
@@ -484,8 +513,6 @@ async def send_message(data: SendMessageRequest):
     finally:
 
         logger.info(f"Клиент Telegram {sender_phone} отключён")
-
-
 
 
 @app.post("/get-sessions/")
@@ -508,13 +535,14 @@ async def get_sessions(data: GetMessagesRequest):
                 acc_info = await client.get_me()
                 all_sessions.append(json.dumps({
                     'id': acc_info.id,
-                    'fio': acc_info.first_name + ' ' + acc_info.last_name,
+                    'first_name': acc_info.first_name,
+                    'last_name': acc_info.last_name,
                     'color': acc_info.color,
                     'photo': acc_info.photo,
                     'phone': phone
                 }))
 
-        return { "sessions": all_sessions }
+        return {"sessions": all_sessions}
     except Exception as e:
         logger.error(f"Ошибка при получении сессий: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -522,7 +550,6 @@ async def get_sessions(data: GetMessagesRequest):
 
 @app.post("/log-out/")
 async def log_out(data: GetMessagesRequest):
-
     phone = data.phone.strip().replace("+", "")
     client = await get_create_client(phone)
     try:
