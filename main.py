@@ -42,6 +42,7 @@ phone_hash_store = {}
 running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
+KAFKA_MESSAGES_TOPIC = os.getenv("KAFKA_MESSAGES_TOPIC", 'new-message-events-dev')
 
 
 def delivery_callback(err, msg):
@@ -139,7 +140,7 @@ async def create_client(phone, session_name):
                     "user_id": event.from_id.user_id,
                     "channel_phone": phone.strip().replace("+", "")
                 }
-                producer.produce('new-message-events', value=json.dumps(payload))
+                producer.produce(KAFKA_MESSAGES_TOPIC, value=json.dumps(payload))
                 producer.flush()
 
             except Exception as e:
