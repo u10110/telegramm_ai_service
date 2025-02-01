@@ -38,6 +38,7 @@ os.makedirs(SESSION_DIR, exist_ok=True)
 
 # Временное хранилище phone_code_hash для каждого номера
 phone_hash_store = {}
+phone_code_store = {}
 
 running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
@@ -228,11 +229,13 @@ async def verify_code(data: VerifyCodeRequest):
         logger.info("Клиент Telegram подключён")
         try:
             me = await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
+
         except SessionPasswordNeededError as e:
+            phone_code_store[phone] = code
             return {"message": f"Необходимо ввести облачный пароль. на аккаунте двузфакторная авторизация. {phone}",
                     "success": False, "require_password": True}
         logger.info(f"Код подтверждён для телефона: {phone}")
-        del phone_hash_store[phone]
+
         return {"message": f"Авторизация завершена для номера {phone}",
                 "success": True, 'account': me }
     except Exception as e:
@@ -244,9 +247,13 @@ async def verify_code(data: VerifyCodeRequest):
         logger.info("Клиент Telegram отключён")
         await get_create_client(phone)
 
+class VerifyPasswordRequest(BaseModel):
+    phone: str
+    password: int
+
 
 @app.post("/input-password/")
-async def input_password(data: VerifyCodeRequest):
+async def input_password(data: VerifyPasswordRequest):
     phone = data.phone
     password = data.password
     phone = phone.strip().replace("+", "")
@@ -263,12 +270,16 @@ async def input_password(data: VerifyCodeRequest):
                             proxy=proxy)
 
     try:
+        print(f"phone_code_store {phone_code_store}")
+        code = phone_code_store.get(phone)
+        phone_code_hash = phone_hash_store.get(phone)
 
         await client.connect()
         logger.info("Клиент Telegram подключён")
-        me = await client.sign_in(phone, password=password)
+        me = await client.sign_in(phone, code, phone_code_hash=phone_code_hash, password=password)
 
         logger.info(f"Пароль введен для телефона: {phone}")
+        del phone_code_store[phone]
         del phone_hash_store[phone]
         return {"message": f"Авторизация завершена для номера {phone}",
                 "success": True, 'account': me}
