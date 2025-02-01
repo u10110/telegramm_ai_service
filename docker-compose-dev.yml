@@ -8,3 +8,8 @@ services:
     ports:
       - 8088:8001
     env_file: .env-dev
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1450

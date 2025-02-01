@@ -56,4 +56,3 @@ deploy_dev:
     - IMAGE_TAG=latest docker compose -f docker-compose-dev.yml -p telethon-service down --timeout 10
     - IMAGE_TAG=latest docker compose -f docker-compose-dev.yml  pull telethon-service
     - IMAGE_TAG=latest docker compose -f docker-compose-dev.yml  up -d telethon-service
-    -
