@@ -8,7 +8,8 @@ from datetime import datetime, timedelta, timezone
 from telethon.tl.functions.messages import GetHistoryRequest
 from os import walk
 import time
-from telethon.errors import SessionPasswordNeededError, UserDeactivatedBanError
+from telethon.errors import UserDeactivatedBanError
+from telethon.errors.rpcerrorlist import SessionPasswordNeededError
 import traceback
 import asyncio
 
@@ -228,7 +229,7 @@ async def verify_code(data: VerifyCodeRequest):
         await client.connect()
         logger.info("Клиент Telegram подключён")
         try:
-            me = await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
+            acc_info = await client.sign_in(phone, code, phone_code_hash=phone_code_hash)
 
         except SessionPasswordNeededError as e:
             phone_code_store[phone] = code
@@ -237,7 +238,13 @@ async def verify_code(data: VerifyCodeRequest):
         logger.info(f"Код подтверждён для телефона: {phone}")
 
         return {"message": f"Авторизация завершена для номера {phone}",
-                "success": True, 'account': me }
+                "success": True, 'account': json.dumps({
+                    'id': acc_info.id,
+                    'first_name': acc_info.first_name,
+                    'last_name': acc_info.last_name,
+                    'color': acc_info.color,
+                    'phone': phone
+                })}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
@@ -249,7 +256,7 @@ async def verify_code(data: VerifyCodeRequest):
 
 class VerifyPasswordRequest(BaseModel):
     phone: str
-    password: int
+    password: str
 
 
 @app.post("/input-password/")
@@ -276,13 +283,20 @@ async def input_password(data: VerifyPasswordRequest):
 
         await client.connect()
         logger.info("Клиент Telegram подключён")
-        me = await client.sign_in(phone, code, phone_code_hash=phone_code_hash, password=password)
+
+        acc_info = await client.sign_in(password=password)
 
         logger.info(f"Пароль введен для телефона: {phone}")
         del phone_code_store[phone]
         del phone_hash_store[phone]
         return {"message": f"Авторизация завершена для номера {phone}",
-                "success": True, 'account': me}
+                "success": True, 'account': json.dumps({
+                    'id': acc_info.id,
+                    'first_name': acc_info.first_name,
+                    'last_name': acc_info.last_name,
+                    'color': acc_info.color,
+                    'phone': phone
+                })}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
@@ -550,7 +564,6 @@ async def get_sessions(data: GetMessagesRequest):
                     'first_name': acc_info.first_name,
                     'last_name': acc_info.last_name,
                     'color': acc_info.color,
-                    'photo': acc_info.photo,
                     'phone': phone
                 }))
 
