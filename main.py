@@ -488,7 +488,7 @@ async def send_message(data: SendMessageRequest):
             time.sleep(2)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except UserDeactivatedBanError as b:
-            logger.error(f"Аккаунт забанен {data.username}: {e}")
+            logger.error(f"Аккаунт забанен {data.username}: {b}")
             raise HTTPException(status_code=500, detail="banned")
         except Exception as e:
             logger.error(traceback.format_exc())
