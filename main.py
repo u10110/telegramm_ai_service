@@ -44,7 +44,7 @@ phone_code_store = {}
 running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
-KAFKA_MESSAGES_TOPIC = os.getenv("KAFKA_MESSAGES_TOPIC", 'new-message-events-dev')
+KAFKA_MESSAGES_TOPIC = os.getenv("KAFKA_MESSAGES_TOPIC", 'new-message-events')
 
 
 def delivery_callback(err, msg):
@@ -128,7 +128,7 @@ async def create_client(phone, session_name):
 
             try:
                 sender = await event.get_sender()
-                logger.debug(sender.username)
+                logger.debug(f" new-message {sender.username}")
 
                 payload = {
                     "id": event.message.id,
