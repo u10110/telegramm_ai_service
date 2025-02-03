@@ -25,7 +25,7 @@ build:telegramm_ai_service:
   script:
     - docker build -f Dockerfile -t ${CONTAINER_IMAGE} .
     - docker tag ${CONTAINER_IMAGE} ${CONTAINER_IMAGE_LATEST}
-    # - docker push ${CONTAINER_IMAGE_LATEST}
+    - docker push ${CONTAINER_IMAGE_LATEST}
 
 deploy:
   stage: deploy
