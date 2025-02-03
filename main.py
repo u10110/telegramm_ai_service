@@ -485,7 +485,6 @@ async def send_message(data: SendMessageRequest):
         # Определяем сущность пользователя по username
         try:
             entity = await client.get_entity(data.username)
-            time.sleep(2)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except UserDeactivatedBanError as b:
             logger.error(f"Аккаунт забанен {data.username}: {b}")
@@ -493,7 +492,7 @@ async def send_message(data: SendMessageRequest):
         except Exception as e:
             logger.error(traceback.format_exc())
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
-            raise HTTPException(status_code=404, detail="Пользователь с указанным username не найден.")
+            raise HTTPException(status_code=404, detail="Ошибка при получении сущности для {data.username}.")
 
         async def callback(async_client):
 
