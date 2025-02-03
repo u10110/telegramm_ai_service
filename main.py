@@ -148,7 +148,7 @@ async def create_client(phone, session_name):
             except Exception as e:
                 logger.error(traceback.format_exc())
                 logger.error(e)
-
+    await client.start()
     await client.catch_up()
 
     return client
@@ -500,7 +500,6 @@ async def send_message(data: SendMessageRequest):
                 peer=entity,
                 action=types.SendMessageTypingAction()
             ))
-            time.sleep(5)
             # Отправка сообщения
             msg = await async_client.send_message(entity, data.message)
             logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
