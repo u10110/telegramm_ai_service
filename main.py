@@ -500,6 +500,7 @@ async def send_message(data: SendMessageRequest):
                 peer=entity,
                 action=types.SendMessageTypingAction()
             ))
+            await asyncio.sleep(5)
             # Отправка сообщения
             msg = await async_client.send_message(entity, data.message)
             logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
