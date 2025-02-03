@@ -320,7 +320,7 @@ async def get_users(phone: str):
     print(f"session_name {session_name}")
     client = await get_create_client(phone)
     print(client)
-
+    await client.connect()
     try:
 
         logger.info("Клиент Telegram подключён")
@@ -433,6 +433,8 @@ async def get_messages(data: GetMessagesRequest):
     phone = data.phone.strip().replace("+", "")
     client = await get_create_client(phone)
 
+    await client.connect()
+
     try:
         # Подключаем клиента
 
@@ -477,11 +479,13 @@ async def send_message(data: SendMessageRequest):
         sender_phone = data.phone.strip().replace("+", "")  # Аккаунт отправителя
         client = await get_create_client(sender_phone)
         logger.debug(client)
+        await client.connect()
 
         # await client(UpdateStatusRequest(offline=False))
         # Определяем сущность пользователя по username
         try:
             entity = await client.get_entity(data.username)
+            time.sleep(2)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except UserDeactivatedBanError as b:
             logger.error(f"Аккаунт забанен {data.username}: {e}")
@@ -503,39 +507,35 @@ async def send_message(data: SendMessageRequest):
             logger.info(f"Сообщение отправлено пользователю {data.username}: {msg}")
             return msg
 
-        try:
-            message = await asyncio.sleep(5, result=await callback(client))
+        message = await asyncio.sleep(5, result=await callback(client))
 
-            sender = None
-            if message.from_id:
-                sender = message.from_id.user_id
+        sender = None
+        if message.from_id:
+            sender = message.from_id.user_id
 
-            user_id = None
-            if message.from_id:
-                user_id = message.from_id.user_id
+        user_id = None
+        if message.from_id:
+            user_id = message.from_id.user_id
 
-            return {"message": "Сообщение успешно отправлено", "success": True,
-                    "result": json.dumps({
-                        "id": message.id,
-                        "date": message.date.isoformat(),
-                        "username": data.username,
-                        # "channel": event.message.peer_id,
-                        "via_bot_id": message.via_bot_id,
-                        "text": message.raw_text,
-                        "sender_id": sender,
-                        "from_id": {"user_id": user_id},
-                        "user_id": message.from_id.user_id,
-                        "channel_phone": sender_phone
-                    })}
-
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            raise HTTPException(status_code=500)
+        return {"message": "Сообщение успешно отправлено",
+                "success": True,
+                "result": json.dumps({
+                    "id": message.id,
+                    "date": message.date.isoformat(),
+                    "username": data.username,
+                    # "channel": event.message.peer_id,
+                    "via_bot_id": message.via_bot_id,
+                    "text": message.raw_text,
+                    "sender_id": sender,
+                    "from_id": {"user_id": user_id},
+                    "user_id": message.from_id.user_id,
+                    "channel_phone": sender_phone
+                })}
 
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
     finally:
 
         logger.info(f"Клиент Telegram {sender_phone} отключён")
@@ -578,7 +578,7 @@ async def log_out(data: GetMessagesRequest):
     phone = data.phone.strip().replace("+", "")
     client = await get_create_client(phone)
     try:
-
+        await client.connect()
         result = await client.log_out()
         logger.debug(result)
         del running_clients[phone]
