@@ -528,7 +528,7 @@ async def send_message(data: SendMessageRequest):
                     "text": message.raw_text,
                     "sender_id": sender,
                     "from_id": {"user_id": user_id},
-                    "user_id": message.from_id.user_id,
+                    "user_id": user_id,
                     "channel_phone": sender_phone
                 })}
 
