@@ -1,6 +1,6 @@
 services:
   telegramm_ai_service:
-    image: registry.dplab.tech/telegramm_ai_service:latest
+    image: registry.mplab.io/telegramm_ai_service:latest
     container_name: telegramm_ai_service
     restart: always
     volumes:
