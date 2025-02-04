@@ -173,6 +173,9 @@ async def send_code(phone: str):
             logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
             raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
 
+    if running_clients.get(phone):
+        del running_clients[phone]
+
     proxy = proxy_ru
     if phone.startswith('971') and len(phone) == 12:
         logger.debug(f"{phone} использует прокси ОАЭ")
@@ -606,12 +609,11 @@ async def log_out(phone: str):
     try:
 
         client = await get_create_client(phone)
-        session_name = os.path.join(SESSION_DIR, "session_" + phone)
 
         await client.connect()
         result = await client.log_out()
-        logger.debug(result)
-        del running_clients[phone]
+        if running_clients.get(phone):
+            del running_clients[phone]
         return {"logout": result}
     except Exception as e:
 
