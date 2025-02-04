@@ -594,7 +594,7 @@ async def get_sessions(phone: str):
                         'phone': phone
                     })
 
-        return {"sessions": json.dumps(all_sessions)}
+        return {"sessions": all_sessions}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при получении сессий: {str(e)}")
