@@ -571,17 +571,28 @@ async def get_sessions(phone: str):
                 phone = session_name.split('_')[1]
 
                 client = await get_create_client(phone)
+                logger.info(f"Получение сессии {phone}")
                 acc_info = await client.get_me()
-                all_sessions.append(json.dumps({
-                    'id': acc_info.id,
-                    'first_name': acc_info.first_name,
-                    'last_name': acc_info.last_name,
-                    'color': acc_info.color,
-                    'phone': phone
-                }))
+                if acc_info:
+                    all_sessions.append({
+                        'id': acc_info.id,
+                        'first_name': acc_info.first_name,
+                        'last_name': acc_info.last_name,
+                        'color': acc_info.color,
+                        'phone': phone
+                    })
+                else:
+                    all_sessions.append({
+                        'id': None,
+                        'first_name': None,
+                        'last_name': None,
+                        'color': None,
+                        'phone': phone
+                    })
 
-        return {"sessions": all_sessions}
+        return {"sessions": json.dumps(all_sessions)}
     except Exception as e:
+        logger.error(traceback.format_exc())
         logger.error(f"Ошибка при получении сессий: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -602,5 +613,6 @@ async def log_out(phone: str):
         del running_clients[phone]
         return {"logout": result}
     except Exception as e:
+
         logger.error(f"Ошибка при получении сессий: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
