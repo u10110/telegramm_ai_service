@@ -243,11 +243,11 @@ async def verify_code(data: VerifyCodeRequest):
 
         return {"message": f"Авторизация завершена для номера {phone}",
                 "success": True, 'account': json.dumps({
-                'id': acc_info.id,
-                'first_name': acc_info.first_name,
-                'last_name': acc_info.last_name,
-                'color': acc_info.color,
-                'phone': phone
+                    'id': acc_info.id,
+                    'first_name': acc_info.first_name,
+                    'last_name': acc_info.last_name,
+                    'color': acc_info.color,
+                    'phone': phone
             })}
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -571,6 +571,7 @@ async def get_sessions(phone: str):
                 phone = session_name.split('_')[1]
 
                 client = await get_create_client(phone)
+                await client.connect()
                 logger.info(f"Получение сессии {phone}")
                 acc_info = await client.get_me()
                 if acc_info:
