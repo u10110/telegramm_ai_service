@@ -102,10 +102,10 @@ async def get_create_client(phone):
             running_clients[phone] = client
         else:
             logger.info(f"Клиент выгружен из памяти : {phone}")
-    except Exception as e:
-        logger.error(f"Ошибка инициальизации клиента {e}")
-    finally:
         return client
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка инициальизации клиента {e}")
 
 
 async def create_client(phone, session_name):
@@ -113,9 +113,12 @@ async def create_client(phone, session_name):
     if phone.startswith('971') and len(phone) == 12:
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
-
-    client = TelegramClient(session_name, API_ID, API_HASH,
-                            proxy=proxy)
+    try:
+        client = await TelegramClient(session_name, API_ID, API_HASH,
+                                  proxy=proxy)
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка инициальизации клиента {e}")
 
     @client.on(events.NewMessage)
     async def new_message_handler(event):
@@ -148,7 +151,8 @@ async def create_client(phone, session_name):
             except Exception as e:
                 logger.error(traceback.format_exc())
                 logger.error(e)
-    await client.start()
+
+    #await client.start()
     await client.catch_up()
 
     return client
@@ -239,12 +243,12 @@ async def verify_code(data: VerifyCodeRequest):
 
         return {"message": f"Авторизация завершена для номера {phone}",
                 "success": True, 'account': json.dumps({
-                    'id': acc_info.id,
-                    'first_name': acc_info.first_name,
-                    'last_name': acc_info.last_name,
-                    'color': acc_info.color,
-                    'phone': phone
-                })}
+                'id': acc_info.id,
+                'first_name': acc_info.first_name,
+                'last_name': acc_info.last_name,
+                'color': acc_info.color,
+                'phone': phone
+            })}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
@@ -253,6 +257,7 @@ async def verify_code(data: VerifyCodeRequest):
         await client.disconnect()
         logger.info("Клиент Telegram отключён")
         await get_create_client(phone)
+
 
 class VerifyPasswordRequest(BaseModel):
     phone: str
@@ -291,12 +296,12 @@ async def input_password(data: VerifyPasswordRequest):
         del phone_hash_store[phone]
         return {"message": f"Авторизация завершена для номера {phone}",
                 "success": True, 'account': json.dumps({
-                    'id': acc_info.id,
-                    'first_name': acc_info.first_name,
-                    'last_name': acc_info.last_name,
-                    'color': acc_info.color,
-                    'phone': phone
-                })}
+                'id': acc_info.id,
+                'first_name': acc_info.first_name,
+                'last_name': acc_info.last_name,
+                'color': acc_info.color,
+                'phone': phone
+            })}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при подтверждении кода: {str(e)}")
@@ -305,8 +310,6 @@ async def input_password(data: VerifyPasswordRequest):
         await client.disconnect()
         logger.info("Клиент Telegram отключён")
         await get_create_client(phone)
-
-
 
 
 @app.get("/get-users/")
@@ -534,18 +537,29 @@ async def send_message(data: SendMessageRequest):
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
-        raise HTTPException(status_code=500, detail=f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
+        raise HTTPException(status_code=500,
+                            detail=f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
     finally:
 
         logger.info(f"Клиент Telegram {sender_phone} отключён")
 
 
-@app.post("/get-sessions/")
-async def get_sessions(data: GetMessagesRequest):
-    """
-    Получает все сообщения из указанного канала с полными данными.
-    """
+class GetMessagesRequest(BaseModel):
+    phone: str
+    user_id: str
+    offset_date: datetime
+    offset_id: int
+    limit: int
 
+
+@app.get("/get-sessions/")
+async def get_sessions(phone: str):
+    """
+    Получает  сессии.
+    """
+    logger.info('get-sessions')
+    phone = phone.strip().replace("+", "")
+    session_name = os.path.join(SESSION_DIR, "session_" + phone)
     try:
         # Подключаем клиента
 
@@ -572,11 +586,16 @@ async def get_sessions(data: GetMessagesRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/log-out/")
-async def log_out(data: GetMessagesRequest):
-    phone = data.phone.strip().replace("+", "")
-    client = await get_create_client(phone)
+@app.get("/log-out/")
+async def log_out(phone: str):
+    logger.info('log-out')
+    phone = phone.strip().replace("+", "")
+
     try:
+
+        client = await get_create_client(phone)
+        session_name = os.path.join(SESSION_DIR, "session_" + phone)
+
         await client.connect()
         result = await client.log_out()
         logger.debug(result)
