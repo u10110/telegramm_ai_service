@@ -114,7 +114,7 @@ async def create_client(phone, session_name):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
     try:
-        client = await TelegramClient(session_name, API_ID, API_HASH,
+        client = TelegramClient(session_name, API_ID, API_HASH,
                                   proxy=proxy)
     except Exception as e:
         logger.error(traceback.format_exc())
