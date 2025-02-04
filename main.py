@@ -556,13 +556,11 @@ class GetMessagesRequest(BaseModel):
 
 
 @app.get("/get-sessions/")
-async def get_sessions(phone: str):
+async def get_sessions():
     """
     Получает  сессии.
     """
-    logger.info('get-sessions')
-    phone = phone.strip().replace("+", "")
-    session_name = os.path.join(SESSION_DIR, "session_" + phone)
+
     try:
         # Подключаем клиента
 
