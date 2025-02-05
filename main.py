@@ -599,6 +599,29 @@ async def get_sessions():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+@app.get("/get-sessions-files/")
+async def get_sessions_files():
+    """
+    Получает  сессии.
+    """
+
+    try:
+        # Подключаем клиента
+
+        logger.info("Получение списк файлов сессий")
+        all_sessions = []
+        for (dirpath, dirnames, filenames) in walk(SESSION_DIR):
+            for filename in filenames:
+                all_sessions.append(filename)
+
+        return {"sessions": all_sessions}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка при получении файлов сессий: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/log-out/")
 async def log_out(phone: str):
     logger.info('log-out')
@@ -612,6 +635,16 @@ async def log_out(phone: str):
         result = await client.log_out()
         if running_clients.get(phone):
             del running_clients[phone]
+
+        session_name = os.path.join(SESSION_DIR, "session_" + phone)
+        if os.path.exists(session_name + ".session"):
+            try:
+                os.remove(session_name + ".session")
+                logger.info(f"Существующий файл сессии удалён: {session_name}.session")
+            except Exception as e:
+                logger.error(f"Ошибка при удалении файла сессии: {str(e)}")
+                raise HTTPException(status_code=500, detail="Ошибка при очистке предыдущей сессии")
+
         return {"logout": result}
     except Exception as e:
 
