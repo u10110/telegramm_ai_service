@@ -143,7 +143,7 @@ async def create_client(phone, session_name):
                     "sender_id": event.from_id.user_id,
                     "user_id": event.from_id.user_id,
                     "to_id": event.to_id.user_id,
-                    "from_id": event.from_id,
+                    "from_id": event.from_id.user_id,
                     "channel_phone": phone.strip().replace("+", "")
                 }
                 producer.produce(KAFKA_MESSAGES_TOPIC, value=json.dumps(payload))
