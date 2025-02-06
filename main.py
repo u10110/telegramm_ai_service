@@ -141,9 +141,9 @@ async def create_client(phone, session_name):
                     "via_bot_id": event.via_bot_id,
                     "text": event.raw_text,
                     "sender_id": event.from_id.user_id,
-                    "from_id": {"user_id": event.from_id.user_id},
                     "user_id": event.from_id.user_id,
                     "to_id": event.to_id.user_id,
+                    "from_id": event.from_id,
                     "channel_phone": phone.strip().replace("+", "")
                 }
                 producer.produce(KAFKA_MESSAGES_TOPIC, value=json.dumps(payload))
@@ -300,11 +300,11 @@ async def input_password(data: VerifyPasswordRequest):
         del phone_hash_store[phone]
         return {"message": f"Авторизация завершена для номера {phone}",
                 "success": True, 'account': json.dumps({
-                'id': acc_info.id,
-                'first_name': acc_info.first_name,
-                'last_name': acc_info.last_name,
-                'color': acc_info.color,
-                'phone': phone
+                    'id': acc_info.id,
+                    'first_name': acc_info.first_name,
+                    'last_name': acc_info.last_name,
+                    'color': acc_info.color,
+                    'phone': phone
             })}
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -520,8 +520,8 @@ async def send_message(data: SendMessageRequest):
             sender = message.from_id.user_id
 
         user_id = None
-        if message.from_id:
-            user_id = message.from_id.user_id
+        if message.to_id:
+            user_id = message.to_id.user_id
 
         return {"message": "Сообщение успешно отправлено",
                 "success": True,
@@ -533,7 +533,8 @@ async def send_message(data: SendMessageRequest):
                     "via_bot_id": message.via_bot_id,
                     "text": message.raw_text,
                     "sender_id": sender,
-                    "from_id": {"user_id": user_id},
+                    "from_id":  message.from_id,
+                    "to_id":  message.to_id,
                     "user_id": user_id,
                     "channel_phone": sender_phone
                 })}
