@@ -533,8 +533,8 @@ async def send_message(data: SendMessageRequest):
                     "via_bot_id": message.via_bot_id,
                     "text": message.raw_text,
                     "sender_id": sender,
-                    "from_id":  message.from_id,
-                    "to_id":  message.to_id,
+                    "from_id":  sender,
+                    "to_id":  user_id,
                     "user_id": user_id,
                     "channel_phone": sender_phone
                 })}
