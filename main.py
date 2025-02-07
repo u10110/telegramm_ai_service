@@ -577,6 +577,10 @@ async def get_sessions():
                 await client.connect()
                 logger.info(f"Получение сессии {phone}")
                 acc_info = await client.get_me()
+
+
+                logger.debug(acc_info)
+
                 if acc_info:
                     all_sessions.append({
                         'id': acc_info.id,
