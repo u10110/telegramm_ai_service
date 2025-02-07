@@ -523,6 +523,9 @@ async def send_message(data: SendMessageRequest):
         if message.to_id:
             user_id = message.to_id.user_id
 
+        if not user_id and message.peer_id:
+            user_id = message.peer_id.user_id
+
         return {"message": "Сообщение успешно отправлено",
                 "success": True,
                 "result": json.dumps({
