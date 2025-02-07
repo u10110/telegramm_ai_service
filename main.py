@@ -494,7 +494,7 @@ async def send_message(data: SendMessageRequest):
             entity = await client.get_entity(data.username)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except UserDeactivatedBanError as b:
-            logger.error(f"Аккаунт забанен {data.username}: {b}")
+            logger.error(f"Аккаунт забанен {client.phone}: {b}")
             raise HTTPException(status_code=500, detail="banned")
         except Exception as e:
             logger.error(traceback.format_exc())
