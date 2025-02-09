@@ -1,6 +1,5 @@
 stages:
   - build
-  - deploy-dev
   - deploy
 
 #variables:
@@ -19,6 +18,7 @@ build:telegramm_ai_service:
   tags: [infra]
   only:
     - main
+    - development
   variables:
     CONTAINER_IMAGE: registry.mplab.io/telegramm_ai_service:${CI_COMMIT_SHORT_SHA}
     CONTAINER_IMAGE_LATEST: registry.mplab.io/telegramm_ai_service:latest
@@ -43,11 +43,11 @@ deploy:
     - docker compose -f docker-compose.yaml  pull telegramm_ai_service
     - docker compose -f docker-compose.yaml -p telegramm_ai_service up -d
 
-deploy_dev:
+deploy:development:
   stage: deploy
   tags: [eliment-dev]
   only:
-    - main
+    - development
   image:
     name: docker/compose
     entrypoint: ["/bin/sh", "-c"]
