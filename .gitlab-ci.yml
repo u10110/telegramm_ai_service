@@ -16,6 +16,7 @@ build:telegramm_ai_service:
     name: docker:stable
     entrypoint: ["/bin/sh", "-c"]
   tags: [infra]
+  only:
     - main
     - development
   variables:
