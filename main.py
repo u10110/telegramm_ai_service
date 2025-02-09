@@ -153,7 +153,7 @@ async def create_client(phone, session_name):
                 logger.error(traceback.format_exc())
                 logger.error(e)
 
-    #await client.start()
+    await client.connect()
     await client.catch_up()
 
     return client
