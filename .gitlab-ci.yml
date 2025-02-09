@@ -16,8 +16,8 @@ build:telegramm_ai_service:
     name: docker:stable
     entrypoint: ["/bin/sh", "-c"]
   tags: [infra]
-  only:
     - main
+    - development
   variables:
     CONTAINER_IMAGE: registry.mplab.io/telegramm_ai_service:${CI_COMMIT_SHORT_SHA}
     CONTAINER_IMAGE_LATEST: registry.mplab.io/telegramm_ai_service:latest
