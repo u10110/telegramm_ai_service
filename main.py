@@ -17,6 +17,10 @@ from confluent_kafka import Producer
 import json
 
 from telethon.tl.functions.account import UpdateStatusRequest
+from telethon.tl.functions.account import UpdateProfileRequest
+from telethon.tl.functions.account import UpdateUsernameRequest
+from telethon.tl.functions.users import GetFullUserRequest
+
 from telethon import functions, types, events
 from dotenv import load_dotenv
 import python_socks
@@ -251,7 +255,8 @@ async def verify_code(data: VerifyCodeRequest):
                     'first_name': acc_info.first_name,
                     'last_name': acc_info.last_name,
                     'color': acc_info.color,
-                    'phone': phone
+                    'phone': phone,
+                    'username': acc_info.username
             })}
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -304,7 +309,8 @@ async def input_password(data: VerifyPasswordRequest):
                     'first_name': acc_info.first_name,
                     'last_name': acc_info.last_name,
                     'color': acc_info.color,
-                    'phone': phone
+                    'phone': phone,
+                    'username': acc_info.username
             })}
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -560,6 +566,87 @@ class GetMessagesRequest(BaseModel):
     limit: int
 
 
+@app.get("/get-account/")
+async def get_account(phone):
+    """
+    Получает  сессии.
+    """
+    try:
+
+        client = await get_create_client(phone)
+        logger.debug(client)
+        await client.connect()
+        logger.info(f"Получение сессии {phone}")
+        acc_info = await client.get_me()
+        return {
+            'id': acc_info.id,
+            'first_name': acc_info.first_name,
+            'last_name': acc_info.last_name,
+            'color': acc_info.color,
+            'username': acc_info.username,
+            'about': acc_info.about,
+        }
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка при получении сессий: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class UpdateUserRequest(BaseModel):
+    phone: str
+    first_name: str
+    last_name: str
+    about: str
+    username: str
+
+
+@app.post("/update-account/")
+async def update_account(data: UpdateUserRequest):
+    """
+    Получает  сессии.
+    """
+    try:
+
+        phone = data.phone.strip().replace("+", "")
+        first_name = data.phone.strip().replace("+", "")
+        last_name = data.phone.strip().replace("+", "")
+        about = data.phone.strip().replace("+", "")
+        username = data.phone.strip().replace("+", "")
+
+        client = await get_create_client(phone)
+        logger.debug(client)
+        await client.connect()
+
+        logger.info(f"Обновление данных канала {phone}")
+
+        result = await client(functions.account.UpdateProfileRequest(
+            first_name=first_name,
+            last_name=last_name,
+            about=about
+        ))
+
+        logger.debug(result)
+
+        result = client(UpdateUsernameRequest(username))
+
+        logger.debug(result)
+
+        acc_info = await client.get_me()
+
+        return {"success": True, 'data': {
+            'id': acc_info.id,
+            'first_name': acc_info.first_name,
+            'last_name': acc_info.last_name,
+            'color': acc_info.color,
+            'username': acc_info.username,
+            'about': acc_info.about,
+        }}
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка при обновлении даных  аккаунта: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/get-sessions/")
 async def get_sessions():
     """
@@ -590,7 +677,8 @@ async def get_sessions():
                         'first_name': acc_info.first_name,
                         'last_name': acc_info.last_name,
                         'color': acc_info.color,
-                        'phone': phone
+                        'phone': phone,
+                        'username': acc_info.username,
                     })
                 else:
                     all_sessions.append({
@@ -598,7 +686,8 @@ async def get_sessions():
                         'first_name': None,
                         'last_name': None,
                         'color': None,
-                        'phone': phone
+                        'phone': phone,
+                        'username': acc_info.username,
                     })
 
         return {"sessions": all_sessions}
@@ -606,7 +695,6 @@ async def get_sessions():
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при получении сессий: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 @app.get("/get-sessions-files/")
