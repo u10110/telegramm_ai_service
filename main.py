@@ -500,12 +500,12 @@ async def send_message(data: SendMessageRequest):
             entity = await client.get_entity(data.username)
             logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
         except UserDeactivatedBanError as b:
-            logger.error(f"Аккаунт забанен {client.phone}: {b}")
+            logger.error(f"Аккаунт забанен {data.username}: {b}")
             raise HTTPException(status_code=500, detail="banned")
         except Exception as e:
             logger.error(traceback.format_exc())
             logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
-            raise HTTPException(status_code=404, detail="Ошибка при получении сущности для {data.username}.")
+            raise HTTPException(status_code=404, detail="get_entYti_error")
 
         async def callback(async_client):
 
@@ -552,7 +552,7 @@ async def send_message(data: SendMessageRequest):
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
         raise HTTPException(status_code=500,
-                            detail=f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
+                            detail=f"send_error")
     finally:
 
         logger.info(f"Клиент Telegram {sender_phone} отключён")
