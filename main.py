@@ -552,7 +552,7 @@ async def send_message(data: SendMessageRequest):
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
         raise HTTPException(status_code=500,
-                            detail=f"send_error")
+                            detail=str(e))
     finally:
 
         logger.info(f"Клиент Telegram {sender_phone} отключён")
