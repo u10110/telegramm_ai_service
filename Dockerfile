@@ -5,13 +5,10 @@ WORKDIR /app
 
 # Upgrade pip and install Poetry
 RUN pip install --upgrade pip \
- && pip install poetry poetry-setup \
-    && poetry config virtualenvs.create false
+    && pip install fastapi uvicorn telethon confluent-kafka python-dotenv requests python-socks async_timeout asyncio
 
 # Копируем приложение
 COPY . .
-
-RUN pip3 install -r requirements.txt
 
 # Запуск приложения
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
