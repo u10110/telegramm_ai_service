@@ -5,8 +5,7 @@ WORKDIR /app
 
 # Upgrade pip and install Poetry
 RUN pip install --upgrade pip \
-    && pip install fastapi uvicorn telethon confluent-kafka python-dotenv requests python-socks async_timeout asyncio
-
+    && pip install -r requirements.txt
 # Копируем приложение
 COPY . .
 
