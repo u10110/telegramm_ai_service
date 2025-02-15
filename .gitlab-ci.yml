@@ -6,7 +6,7 @@ variables:
   COMPOSE_DOCKER_CLI_BUILD: 1
   DOCKER_BUILDKIT: 1
 
- before_script:
+before_script:
    - docker login -u $NEXUS_REGISTRY_USER -p $NEXUS_REGISTRY_PASSWD registry.dplab.tech
 
 build:telegramm_ai_service:
