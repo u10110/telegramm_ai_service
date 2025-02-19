@@ -496,16 +496,9 @@ async def send_message(data: SendMessageRequest):
 
         # await client(UpdateStatusRequest(offline=False))
         # Определяем сущность пользователя по username
-        try:
-            entity = await client.get_entity(data.username)
-            logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
-        except UserDeactivatedBanError as b:
-            logger.error(f"Аккаунт забанен {data.username}: {b}")
-            raise HTTPException(status_code=500, detail="banned")
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
-            raise HTTPException(status_code=404, detail="get_entYti_error")
+
+        entity = await client.get_entity(data.username)
+        logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
 
         async def callback(async_client):
 
@@ -547,7 +540,13 @@ async def send_message(data: SendMessageRequest):
                     "user_id": user_id,
                     "channel_phone": sender_phone
                 })}
-
+    except UserDeactivatedBanError as b:
+        logger.error(f"Аккаунт забанен {data.username}: {b}")
+        raise HTTPException(status_code=500, detail='banned')
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка при получении сущности для {data.username}: {e}")
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при отправке сообщения: {str(e)} {sender_phone} {data.username}")
@@ -687,7 +686,7 @@ async def get_sessions():
                         'last_name': None,
                         'color': None,
                         'phone': phone,
-                        'username': acc_info.username,
+                        'username':None,
                     })
 
         return {"sessions": all_sessions}
