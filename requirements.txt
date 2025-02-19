@@ -1,0 +1,8 @@
+fastapi==0.115
+uvicorn==0.34
+telethon==1.38
+confluent-kafka==2.8.0
+python-dotenv==1.0
+python-socks==2.7.1
+async_timeout==5.0
+asyncio==3.4.3
