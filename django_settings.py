@@ -21,24 +21,8 @@ def configure_django():
                 'django.contrib.staticfiles',
                 # Если вам нужен админ:
                 'django.contrib.admin',
-            ],
-            DATABASES={
-                'default': {
-                #     'ENGINE': 'django.db.backends.postgresql',
-                #     'NAME': 'eliment',  # Имя базы данных
-                #     'USER': 'postgres',      # Пользователь базы данных
-                #     'PASSWORD': '1',  # Пароль базы данных
-                #     'HOST': '127.0.0.1',          # Хост базы данных (или IP)
-                #     'PORT': '5432',               # Порт PostgreSQL
-                # }
-                    'ENGINE': 'django.db.backends.postgresql',
-                    'NAME': 'eliment',  # Имя базы данных
-                    'USER': 'eliment',      # Пользователь базы данных
-                    'PASSWORD': '1K7dG2cGiWbL',  # Пароль базы данных
-                    'HOST': '49.13.104.130',          # Хост базы данных (или IP)
-                    'PORT': '53743',               # Порт PostgreSQL
-                }
-            },
+            ]
+            ,
             TIME_ZONE='UTC',
             USE_TZ=True,
             STATIC_URL='/static/',

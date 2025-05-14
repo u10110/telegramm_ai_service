@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-API_ID = 21275822
-API_HASH = '300cc403b6ad13139d9e16d8dca9ea4e'
+API_ID = 21454045
+API_HASH = '161cdb077d8a77d75212c79d94e8da6b'
 SESSION_DIR = os.path.join(os.getcwd(), 'sessions')
 os.makedirs(SESSION_DIR, exist_ok=True)
 
@@ -63,10 +63,10 @@ APP_HOST = os.getenv("APP_HOST")
 
 proxy_ru = {
     'proxy_type': python_socks.ProxyType.HTTP,
-    'addr': '185.162.130.86',
-    'port': 10000,
-    'username': '8zLRaaXSXfKEr7pQAPoh',
-    'password': 'RNW78Fm5',
+    'addr': '185.200.188.231',
+    'port': 37039,
+    'username': '4WuzryXBfr',
+    'password': 'XpgOxK3wmD',
     'rdns': True
 }
 
@@ -118,8 +118,7 @@ async def create_client(phone, session_name):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
     try:
-        client = TelegramClient(session_name, API_ID, API_HASH,
-                                  proxy=proxy)
+        client = TelegramClient(session_name, API_ID, API_HASH)
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка инициальизации клиента {e}")
@@ -187,8 +186,7 @@ async def send_code(phone: str):
         proxy = proxy_uae
 
     try:
-        client = TelegramClient(session_name, API_ID, API_HASH,
-                                proxy=proxy)
+        client = TelegramClient(session_name, API_ID, API_HASH)
 
         await client.connect()
         logger.info("Клиент Telegram подключён")
@@ -227,8 +225,7 @@ async def verify_code(data: VerifyCodeRequest):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
-    client = TelegramClient(session_name, API_ID, API_HASH,
-                            proxy=proxy)
+    client = TelegramClient(session_name, API_ID, API_HASH)
 
     try:
 
@@ -287,8 +284,7 @@ async def input_password(data: VerifyPasswordRequest):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
-    client = TelegramClient(session_name, API_ID, API_HASH,
-                            proxy=proxy)
+    client = TelegramClient(session_name, API_ID, API_HASH)
 
     try:
         print(f"phone_code_store {phone_code_store}")
@@ -494,7 +490,7 @@ async def send_message(data: SendMessageRequest):
         logger.debug(client)
         await client.connect()
 
-        # await client(UpdateStatusRequest(offline=False))
+        await client(UpdateStatusRequest(offline=False))
         # Определяем сущность пользователя по username
 
         entity = await client.get_entity(data.username)
