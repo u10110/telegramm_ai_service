@@ -6,3 +6,4 @@ python-dotenv==1.0
 python-socks==2.7.1
 async_timeout==5.0
 asyncio==3.4.3
+pillow

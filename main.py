@@ -12,9 +12,11 @@ from telethon.errors import UserDeactivatedBanError
 from telethon.errors.rpcerrorlist import SessionPasswordNeededError
 import traceback
 import asyncio
+from fastapi.responses import FileResponse
 
 from confluent_kafka import Producer
 import json
+from PIL import Image
 
 from telethon.tl.functions.account import UpdateStatusRequest
 from telethon.tl.functions.account import UpdateProfileRequest
@@ -599,17 +601,36 @@ async def get_user_info(phone, username):
         await client.connect()
         logger.info(f"Получение данных аккаунта  {username}")
         acc_info = await client.get_entity(username)
+
+        photos = await client.get_profile_photos(acc_info)
+
+        photo = await client.download_media(photos[0], './photos/')
         return {
             'id': acc_info.id,
             'first_name': acc_info.first_name,
             'last_name': acc_info.last_name,
             'color': acc_info.color,
             'username': acc_info.username,
-            'about': acc_info.about,
+            'photo': photo
         }
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при получении  данных аккаунта получателя: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@app.get("/get-user-photo/")
+async def get_user_photo(photo):
+    """
+    Получает  сессии.
+    """
+    try:
+
+        return FileResponse(photo)
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка при получении фото: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
