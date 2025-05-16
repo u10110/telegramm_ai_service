@@ -587,6 +587,32 @@ async def get_account(phone):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/get-user-info/")
+async def get_user_info(phone, username):
+    """
+    Получает  сессии.
+    """
+    try:
+
+        client = await get_create_client(phone)
+        logger.debug(client)
+        await client.connect()
+        logger.info(f"Получение данных аккаунта  {username}")
+        acc_info = await client.get_entity(username)
+        return {
+            'id': acc_info.id,
+            'first_name': acc_info.first_name,
+            'last_name': acc_info.last_name,
+            'color': acc_info.color,
+            'username': acc_info.username,
+            'about': acc_info.about,
+        }
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        logger.error(f"Ошибка при получении  данных аккаунта получателя: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class UpdateUserRequest(BaseModel):
     phone: str
     first_name: str
