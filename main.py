@@ -27,6 +27,9 @@ from telethon import functions, types, events
 from dotenv import load_dotenv
 import python_socks
 import traceback
+from telethon.tl.types import User, Chat, Channel
+from telethon.tl.functions.channels import JoinChannelRequest
+from fastapi import Request
 
 load_dotenv()
 
@@ -129,14 +132,19 @@ async def create_client(phone, session_name):
     async def new_message_handler(event):
 
         logger.info(f"Message receiver:  {event.raw_text}")
-        logger.debug(event)
 
-        if event.from_id and isinstance(event.from_id, PeerUser) and \
-                event.to_id and isinstance(event.to_id, PeerUser) and producer is not None:
+        if event.from_id and isinstance(event.message.from_id, PeerUser) and producer is not None:
 
             try:
                 sender = await event.get_sender()
                 logger.debug(f" new-message {sender.username}")
+                to_user_id = None
+                logger.debug(event.message)
+                if isinstance(event.message.to_id, PeerUser):
+                    to_user_id = event.to_id.user_id
+
+                if event.message.mentioned == True and event.entities is not None and len(event.entities) == 1:
+                    to_user_id = event.entities[0].user_id
 
                 payload = {
                     "id": event.message.id,
@@ -147,7 +155,7 @@ async def create_client(phone, session_name):
                     "text": event.raw_text,
                     "sender_id": event.from_id.user_id,
                     "user_id": event.from_id.user_id,
-                    "to_id": event.to_id.user_id,
+                    "to_id": to_user_id,
                     "from_id": event.from_id.user_id,
                     "channel_phone": phone.strip().replace("+", "")
                 }
@@ -498,6 +506,9 @@ async def send_message(data: SendMessageRequest):
         entity = await client.get_entity(data.username)
         logger.info(f"Найдена сущность пользователя {data.username}: {entity}")
 
+        if type(entity) == Channel:
+            await client(JoinChannelRequest(entity))
+
         async def callback(async_client):
 
             await async_client(functions.messages.SetTypingRequest(
@@ -517,7 +528,7 @@ async def send_message(data: SendMessageRequest):
             sender = message.from_id.user_id
 
         user_id = None
-        if message.to_id:
+        if message.to_id and type(entity) == User:
             user_id = message.to_id.user_id
 
         if not user_id and message.peer_id:
@@ -603,8 +614,9 @@ async def get_user_info(phone, username):
         acc_info = await client.get_entity(username)
 
         photos = await client.get_profile_photos(acc_info)
-
-        photo = await client.download_media(photos[0], './photos/')
+        photo = ''
+        if len(photos) > 0:
+            photo = await client.download_media(photos[0], './photos/')
         return {
             'id': acc_info.id,
             'first_name': acc_info.first_name,
@@ -634,26 +646,18 @@ async def get_user_photo(photo):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class UpdateUserRequest(BaseModel):
-    phone: str
-    first_name: str
-    last_name: str
-    about: str
-    username: str
-
-
 @app.post("/update-account/")
-async def update_account(data: UpdateUserRequest):
+async def update_account(request: Request):
     """
     Получает  сессии.
     """
     try:
-
-        phone = data.phone.strip().replace("+", "")
-        first_name = data.phone.strip().replace("+", "")
-        last_name = data.phone.strip().replace("+", "")
-        about = data.phone.strip().replace("+", "")
-        username = data.phone.strip().replace("+", "")
+        data = await request.json()
+        phone = data.get('phone', '').strip().replace("+", "")
+        first_name = data.get('first_name', '')
+        last_name = data.get('last_name', '')
+        about = data.get('about', '')
+        username = data.get('username', '')
 
         client = await get_create_client(phone)
         logger.debug(client)
@@ -661,28 +665,15 @@ async def update_account(data: UpdateUserRequest):
 
         logger.info(f"Обновление данных канала {phone}")
 
-        result = await client(functions.account.UpdateProfileRequest(
+        await client(functions.account.UpdateProfileRequest(
             first_name=first_name,
             last_name=last_name,
-            about=about
+            about=about,
         ))
+        if username is not None:
+            await client(UpdateUsernameRequest(username))
 
-        logger.debug(result)
-
-        result = client(UpdateUsernameRequest(username))
-
-        logger.debug(result)
-
-        acc_info = await client.get_me()
-
-        return {"success": True, 'data': {
-            'id': acc_info.id,
-            'first_name': acc_info.first_name,
-            'last_name': acc_info.last_name,
-            'color': acc_info.color,
-            'username': acc_info.username,
-            'about': acc_info.about,
-        }}
+        return {"success": True}
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка при обновлении даных  аккаунта: {str(e)}")
