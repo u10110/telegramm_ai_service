@@ -54,6 +54,7 @@ running_clients = {}
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS")
 producer = Producer({'bootstrap.servers': KAFKA_BOOTSTRAP_SERVERS})
 KAFKA_MESSAGES_TOPIC = os.getenv("KAFKA_MESSAGES_TOPIC", 'new-message-events')
+KAFKA_SYS_MESSAGES_TOPIC = os.getenv("KAFKA_MESSAGES_TOPIC", 'new-sys-message-events')
 
 
 def delivery_callback(err, msg):
@@ -165,6 +166,10 @@ async def create_client(phone, session_name):
             except Exception as e:
                 logger.error(traceback.format_exc())
                 logger.error(e)
+        else:
+            producer.produce(KAFKA_SYS_MESSAGES_TOPIC, value=json.dumps(payload))
+            producer.flush()
+
 
     await client.connect()
     await client.catch_up()
@@ -370,18 +375,21 @@ class GetMessagesRequest(BaseModel):
     limit: int
 
 
-async def get_all_messages(client, channel_id, offset_date, offset_id, limit):
+async def get_all_messages(client, user_id, offset_date, offset_id, limit):
     try:
-        if not channel_id:
+        if not user_id:
             raise ValueError("channel_id не может быть None.")
 
-        entity = await client.get_entity(channel_id)
+        if not offset_id:
+            raise ValueError("offset_id не может быть None.")
 
+        entity = await client.get_entity(user_id)
+        logger.debug(entity)
         history = await client(GetHistoryRequest(
             peer=entity,
-            limit=limit,
-            offset_date=offset_date,
-            offset_id=offset_id,
+            limit=0,
+            offset_date=None,
+            offset_id=0,
             max_id=0,
             min_id=0,
             add_offset=0,
