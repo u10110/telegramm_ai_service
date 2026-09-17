@@ -1,6 +1,6 @@
 fastapi==0.115
 uvicorn==0.34
-telethon==1.40
+telethon>=1.45
 confluent-kafka==2.8.0
 python-dotenv==1.0
 python-socks==2.7.1
