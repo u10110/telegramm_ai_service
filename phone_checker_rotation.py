@@ -125,13 +125,6 @@ async def check_one(client: TelegramClient, phone: str) -> tuple[str, Any | None
             user = profile_users[0]
     except Exception:
         pass
-    try:
-        if getattr(user, "access_hash", None):
-            await client(functions.contacts.DeleteContactsRequest(
-                id=[types.InputUser(user_id=user.id, access_hash=user.access_hash)]
-            ))
-    except Exception:
-        pass
     return "present", user
 
 
