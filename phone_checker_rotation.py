@@ -17,6 +17,10 @@ MAX_PER_ACCOUNT_PER_DAY = 10
 PHOTOS_DIR = Path(os.getenv("PHOTOS_DIR", "/app/photos"))
 PUBLIC_PHOTO_BASE = os.getenv("PUBLIC_PHOTO_BASE", "http://93.183.106.243/photos").rstrip("/")
 
+TOKEN_PATH = os.getenv("GOOGLE_TOKEN_PATH", "/tmp/google_token.json")
+RESULT_SHEET_ID = os.getenv("RESULT_SHEET_ID", "1RbKZzfvnZ4FCBBKGSi0sXnx07sX0ZEOqT31q6h_zCbw")
+RESULT_SHEET_RANGE = os.getenv("RESULT_SHEET_RANGE", "Лист1")
+
 
 def today(now: datetime) -> str:
     return now.astimezone(UTC).date().isoformat()
@@ -111,6 +115,85 @@ def save_rows(path: Path, rows: list[dict[str, Any]], fields: list[str]) -> None
     tmp.replace(path)
 
 
+class SheetSync:
+    """Пишет результаты проверок в Google-таблицу сразу после каждой строки.
+
+    - Ленивое подключение (при первом результате), token-файл с refresh.
+    - Обновление конкретной строки по phone (поиск в закэшированном индексе).
+    - Ошибки Google не роняют обход — пишутся в лог, обход продолжается.
+    """
+
+    def __init__(self) -> None:
+        self._service = None
+        self._sheet_name: str | None = None
+        self._row_index: dict[str, int] = {}  # phone -> номер строки в таблице
+        self._pending: list[tuple[int, list[str]]] = []
+        self.errors: list[str] = []
+
+    def _connect(self) -> bool:
+        if self._service is not None:
+            return True
+        try:
+            from google.oauth2.credentials import Credentials
+            from google.auth.transport.requests import Request
+            from googleapiclient.discovery import build
+
+            creds = Credentials.from_authorized_user_file(TOKEN_PATH)
+            if creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            self._service = build("sheets", "v4", credentials=creds, cache_discovery=False)
+            meta = self._service.spreadsheets().get(spreadsheetId=RESULT_SHEET_ID).execute()
+            if RESULT_SHEET_RANGE and RESULT_SHEET_RANGE not in [s["properties"]["title"] for s in meta["sheets"]]:
+                first = meta["sheets"][0]["properties"]["title"]
+                self._sheet_name = first
+            else:
+                self._sheet_name = RESULT_SHEET_RANGE
+            return True
+        except Exception as exc:
+            self.errors.append(f"sync-connect: {type(exc).__name__}: {exc}"[:200])
+            self._service = None
+            return False
+
+    def build_index(self) -> int:
+        """Кэширует phone -> строка; вызывается один раз перед обходом."""
+        if not self._connect():
+            return -1
+        try:
+            resp = self._service.spreadsheets().values().get(
+                spreadsheetId=RESULT_SHEET_ID, range=f"{self._sheet_name}!A2:A"
+            ).execute()
+            for i, row in enumerate(resp.get("values", []), start=2):
+                if row and row[0]:
+                    self._row_index[row[0]] = i
+            return len(self._row_index)
+        except Exception as exc:
+            self.errors.append(f"sync-index: {type(exc).__name__}: {exc}"[:200])
+            return -1
+
+    def update_row(self, phone: str, values: list[str]) -> None:
+        """Обновляет строку по телефону (колонки I..AA = telegram_status..telegram_gender)."""
+        if phone not in self._row_index:
+            return
+        row_no = self._row_index[phone]
+        try:
+            self._service.spreadsheets().values().update(
+                spreadsheetId=RESULT_SHEET_ID,
+                range=f"{self._sheet_name}!I{row_no}",
+                valueInputOption="RAW",
+                body={"values": [values]},
+            ).execute()
+        except Exception as exc:
+            self.errors.append(f"sync-row {phone}: {type(exc).__name__}: {exc}"[:200])
+
+
+FIELDS_OFFSET = 8  # phone,operator,region,territory,inn,source_prefix,source_from,source_to
+
+
+def row_values(fields: list[str], row: dict[str, Any]) -> list[str]:
+    """Колонки I..AA из dict-строки CSV (telegram_status..telegram_gender)."""
+    return [str(row.get(f, "")) for f in fields[FIELDS_OFFSET:]]
+
+
 async def check_one(client: TelegramClient, phone: str) -> tuple[str, Any | None]:
     contact = types.InputPhoneContact(client_id=0, phone=phone, first_name="Lead", last_name="Check")
     try:
@@ -150,33 +233,45 @@ async def run_rotation(csv_path: Path, state_path: Path, limit: int | None = Non
     accounts = [str(p) for p in paths]
     now = datetime.now(UTC)
     state = load_state(state_path)
+    # Do not connect all sessions before the first check: with 100+ accounts,
+    # Telegram update sync may stall startup indefinitely. Connect only an account
+    # when it is selected for the next phone; keep it connected afterward.
     clients: dict[str, TelegramClient] = {}
-    available: list[str] = []
-    for path in paths:
-        client = TelegramClient(str(path), int(os.environ["TELEGRAM_API_ID"]), os.environ["TELEGRAM_API_HASH"], proxy=proxy_config(), connection_retries=1, request_retries=1)
-        try:
-            await client.connect()
-            if await client.is_user_authorized():
-                clients[str(path)] = client
-                available.append(str(path))
-            else:
-                await client.disconnect()
-        except Exception:
-            try:
-                await client.disconnect()
-            except Exception:
-                pass
+    available: list[str] = accounts.copy()
     if not available:
-        return {"total": len(rows), "processed": 0, "error": "no_authorized_accounts", "remaining": len(pending)}
+        return {"total": len(rows), "processed": 0, "error": "no_session_files", "remaining": len(pending)}
+    print(f"[rotation] кандидатов аккаунтов: {len(available)}; lazy-connect включён", flush=True)
     cursor = int(state.get("cursor", 0)) % len(available)
     result = {"total": len(rows), "requested": len(pending), "processed": 0, "present": 0, "absent": 0, "errors": 0, "flood_accounts": []}
+    sync = SheetSync()
+    indexed = sync.build_index()
+    print(f"[sync] индекс таблицы: {indexed} строк; ошибки: {sync.errors or 'нет'}", flush=True)
     try:
         for idx in pending:
             now = datetime.now(UTC)
             account, account_idx = choose_account(available, state.setdefault("accounts", {}), cursor, now)
             if account is None:
                 break
-            client = clients[account]
+            # Lazy connect and authorization check for the chosen account.
+            client = clients.get(account)
+            if client is None:
+                client = TelegramClient(account, int(os.environ["TELEGRAM_API_ID"]), os.environ["TELEGRAM_API_HASH"], proxy=proxy_config(), connection_retries=1, request_retries=1)
+                try:
+                    await client.connect()
+                    if not await client.is_user_authorized():
+                        await client.disconnect()
+                        available.remove(account)
+                        continue
+                    clients[account] = client
+                    print(f"[rotation] аккаунт подключён: {Path(account).name}", flush=True)
+                except Exception as exc:
+                    try:
+                        await client.disconnect()
+                    except Exception:
+                        pass
+                    available.remove(account)
+                    print(f"[rotation] аккаунт недоступен: {Path(account).name}: {type(exc).__name__}", flush=True)
+                    continue
             row = rows[idx]
             phone = "".join(ch for ch in str(row.get("phone", "")) if ch.isdigit())
             if len(phone) != 11:
@@ -221,6 +316,7 @@ async def run_rotation(csv_path: Path, state_path: Path, limit: int | None = Non
             cursor = (account_idx + 1) % len(available)
             state["cursor"] = cursor
             save_rows(csv_path, rows, fields); save_state(state_path, state)
+            sync.update_row(row.get("phone", ""), row_values(fields, row))
             await asyncio.sleep(float(os.getenv("TELEGRAM_CHECK_DELAY", "2")))
     finally:
         for client in clients.values():
