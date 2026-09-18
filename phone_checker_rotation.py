@@ -14,6 +14,9 @@ from telethon.errors import FloodWaitError, PhoneNotOccupiedError
 UTC = timezone.utc
 MAX_PER_ACCOUNT_PER_DAY = 10
 
+PHOTOS_DIR = Path(os.getenv("PHOTOS_DIR", "/app/photos"))
+PUBLIC_PHOTO_BASE = os.getenv("PUBLIC_PHOTO_BASE", "http://93.183.106.243/photos").rstrip("/")
+
 
 def today(now: datetime) -> str:
     return now.astimezone(UTC).date().isoformat()
@@ -82,16 +85,18 @@ def session_paths() -> list[Path]:
     if raw:
         paths = [Path(x.strip()) for x in raw.split(",") if x.strip()]
     else:
-        directory = Path(os.getenv("TELEGRAM_SESSION_DIR", "/root/leadgen_restore"))
-        paths = sorted(directory.glob("telegram_userbot*.session"))
+        directory = Path(os.getenv("TELEGRAM_SESSION_DIR", "/app/sessions"))
+        pattern = os.getenv("TELEGRAM_SESSION_GLOB", "session_*.session")
+        paths = sorted(directory.glob(pattern))
     return [p for p in paths if p.exists() and not p.name.endswith("-journal")]
 
 
 def proxy_config() -> dict[str, Any]:
     import python_socks
+    kind = os.getenv("TELEGRAM_PROXY_TYPE", "HTTP").upper()
     return {
-        "proxy_type": python_socks.ProxyType.SOCKS5,
-        "addr": os.getenv("TELEGRAM_PROXY_ADDR", "sing-box"),
+        "proxy_type": getattr(python_socks.ProxyType, kind, python_socks.ProxyType.HTTP),
+        "addr": os.getenv("TELEGRAM_PROXY_ADDR", "vpn"),
         "port": int(os.getenv("TELEGRAM_PROXY_PORT", "10808")),
         "rdns": True,
     }
@@ -118,14 +123,18 @@ async def check_one(client: TelegramClient, phone: str) -> tuple[str, Any | None
     if not users:
         return "absent", None
     user = users[0]
+    about = ""
     try:
         full = await asyncio.wait_for(client(functions.users.GetFullUserRequest(id=user)), timeout=30)
         profile_users = getattr(full, "users", None) or []
         if profile_users:
             user = profile_users[0]
+        full_user = getattr(full, "full_user", None)
+        if full_user is not None:
+            about = getattr(full_user, "about", "") or ""
     except Exception:
         pass
-    return "present", user
+    return "present", (user, about)
 
 
 async def run_rotation(csv_path: Path, state_path: Path, limit: int | None = None) -> dict[str, Any]:
@@ -177,12 +186,25 @@ async def run_rotation(csv_path: Path, state_path: Path, limit: int | None = Non
             else:
                 mark_assigned(state["accounts"], account, now)
                 try:
-                    status, user = await check_one(client, "+" + phone)
+                    status, payload = await check_one(client, "+" + phone)
                     if status == "present":
-                        row.update(telegram_status="present", check_note=f"Найдено через {Path(account).name}; сообщение не отправлялось", telegram_user_id=str(user.id), telegram_username=getattr(user, "username", "") or "", telegram_first_name=getattr(user, "first_name", "") or "", telegram_last_name=getattr(user, "last_name", "") or "")
+                        user, about = payload
+                        avatar_url, avatar_error = "", ""
+                        try:
+                            photos = await client.get_profile_photos(user)
+                            if photos:
+                                PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+                                fname = f"{phone}_{user.id}.jpg"
+                                target = PHOTOS_DIR / fname
+                                if not target.exists():
+                                    await client.download_media(photos[0], file=str(target))
+                                avatar_url = f"{PUBLIC_PHOTO_BASE}/{fname}"
+                        except Exception as exc:
+                            avatar_error = f"{type(exc).__name__}: {exc}"[:200]
+                        row.update(telegram_status="present", check_note=f"Найдено через {Path(account).name}; сообщение не отправлялось", telegram_user_id=str(user.id), telegram_username=getattr(user, "username", "") or "", telegram_first_name=getattr(user, "first_name", "") or "", telegram_last_name=getattr(user, "last_name", "") or "", telegram_bio=about or "", telegram_avatar_present="yes" if avatar_url else "no", telegram_avatar_path=avatar_url, telegram_avatar_error=avatar_error)
                         result["present"] += 1
                     else:
-                        row.update(telegram_status="absent", check_note=f"Не найдено через ImportContactsRequest ({Path(account).name}); сообщение не отправлялось")
+                        row.update(telegram_status="absent", check_note=f"Не найдено через ImportContactsRequest ({Path(account).name}); сообщение не отправлялось", telegram_avatar_present="no", telegram_avatar_path="", telegram_avatar_error="")
                         result["absent"] += 1
                 except FloodWaitError as exc:
                     seconds = int(getattr(exc, "seconds", 60))
