@@ -4,6 +4,25 @@ networks:
     driver: bridge
 
 services:
+  telegramm-ai-service:
+    build:
+      context: .
+    container_name: telegramm-ai-service
+    env_file:
+      - .env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: broker:29092
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
+    ports:
+      - "127.0.0.1:8001:8001"
+    volumes:
+      - telegramm-ai-sessions:/app/sessions
+    networks:
+      - local-kafka
+    depends_on:
+      - broker
+    restart: unless-stopped
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
     container_name: zookeeper
@@ -50,3 +69,5 @@ services:
       - KAFKA_CLUSTERS_0_NAME=broker
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=broker:9093
       - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+volumes:
+  telegramm-ai-sessions:

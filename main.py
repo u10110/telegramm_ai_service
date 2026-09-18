@@ -69,19 +69,15 @@ APP_HOST = os.getenv("APP_HOST")
 
 proxy_ru = {
     'proxy_type': python_socks.ProxyType.HTTP,
-    'addr': '185.200.188.231',
-    'port': 37039,
-    'username': '4WuzryXBfr',
-    'password': 'XpgOxK3wmD',
+    'addr': 'vpn',
+    'port': 10808,
     'rdns': True
 }
 
 proxy_uae = {
     'proxy_type': python_socks.ProxyType.HTTP,
-    'addr': '185.162.130.86',
-    'port': 10000,
-    'username': 'EKQUyXqBAwCOYDdvHtMR',
-    'password': 'RNW78Fm5',
+    'addr': 'vpn',
+    'port': 10808,
     'rdns': True
 }
 
@@ -124,7 +120,7 @@ async def create_client(phone, session_name):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
     try:
-        client = TelegramClient(session_name, API_ID, API_HASH)
+        client = TelegramClient(session_name, API_ID, API_HASH, proxy=proxy)
     except Exception as e:
         logger.error(traceback.format_exc())
         logger.error(f"Ошибка инициальизации клиента {e}")
@@ -201,7 +197,7 @@ async def send_code(phone: str):
         proxy = proxy_uae
 
     try:
-        client = TelegramClient(session_name, API_ID, API_HASH)
+        client = TelegramClient(session_name, API_ID, API_HASH, proxy=proxy)
 
         await client.connect()
         logger.info("Клиент Telegram подключён")
@@ -240,7 +236,7 @@ async def verify_code(data: VerifyCodeRequest):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = TelegramClient(session_name, API_ID, API_HASH, proxy=proxy)
 
     try:
 
@@ -299,7 +295,7 @@ async def input_password(data: VerifyPasswordRequest):
         logger.debug(f"{phone} использует прокси ОАЭ")
         proxy = proxy_uae
 
-    client = TelegramClient(session_name, API_ID, API_HASH)
+    client = TelegramClient(session_name, API_ID, API_HASH, proxy=proxy)
 
     try:
         print(f"phone_code_store {phone_code_store}")
