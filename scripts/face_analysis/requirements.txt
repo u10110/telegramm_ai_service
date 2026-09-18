@@ -1,0 +1,4 @@
+insightface==2.0
+onnxruntime==1.23.2
+google-api-python-client==2.200.0
+google-auth==2.58.0

@@ -12,7 +12,9 @@ from telethon import TelegramClient, functions, types
 from telethon.errors import FloodWaitError, PhoneNotOccupiedError
 
 UTC = timezone.utc
-MAX_PER_ACCOUNT_PER_DAY = 10
+# Default is conservative; an operator may temporarily raise it for a specific
+# controlled run via TELEGRAM_MAX_PER_ACCOUNT_PER_DAY.
+MAX_PER_ACCOUNT_PER_DAY = int(os.getenv("TELEGRAM_MAX_PER_ACCOUNT_PER_DAY", "10"))
 
 PHOTOS_DIR = Path(os.getenv("PHOTOS_DIR", "/app/photos"))
 PUBLIC_PHOTO_BASE = os.getenv("PUBLIC_PHOTO_BASE", "http://93.183.106.243/photos").rstrip("/")
@@ -257,8 +259,13 @@ async def run_rotation(csv_path: Path, state_path: Path, limit: int | None = Non
             if client is None:
                 client = TelegramClient(account, int(os.environ["TELEGRAM_API_ID"]), os.environ["TELEGRAM_API_HASH"], proxy=proxy_config(), connection_retries=1, request_retries=1)
                 try:
-                    await client.connect()
-                    if not await client.is_user_authorized():
+                    # A dead/proxy-stalled session must never freeze the entire rotation.
+                    connect_timeout = float(os.getenv("TELEGRAM_CONNECT_TIMEOUT", "25"))
+                    await asyncio.wait_for(client.connect(), timeout=connect_timeout)
+                    authorized = await asyncio.wait_for(
+                        client.is_user_authorized(), timeout=connect_timeout
+                    )
+                    if not authorized:
                         await client.disconnect()
                         available.remove(account)
                         continue
@@ -286,7 +293,12 @@ async def run_rotation(csv_path: Path, state_path: Path, limit: int | None = Non
                         user, about = payload
                         avatar_url, avatar_error = "", ""
                         try:
-                            photos = await client.get_profile_photos(user)
+                            # Telegram can indefinitely stall on GetUserPhotos for a
+                            # problematic profile; timeout keeps the whole rotation alive.
+                            photos = await asyncio.wait_for(
+                                client.get_profile_photos(user),
+                                timeout=float(os.getenv("TELEGRAM_PHOTO_TIMEOUT", "25")),
+                            )
                             if photos:
                                 PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
                                 fname = f"{phone}_{user.id}.jpg"
@@ -294,8 +306,14 @@ async def run_rotation(csv_path: Path, state_path: Path, limit: int | None = Non
                                 if not target.exists():
                                     await client.download_media(photos[0], file=str(target))
                                 avatar_url = f"{PUBLIC_PHOTO_BASE}/{fname}"
+                        except asyncio.CancelledError:
+                            # Telethon may cancel a profile-photo request on malformed
+                            # session updates; treat only this avatar as unavailable.
+                            avatar_error = "CancelledError while loading avatar"
                         except Exception as exc:
                             avatar_error = f"{type(exc).__name__}: {exc}"[:200]
+                        # GetFullUserRequest возвращает данные профиля; сохраняем ФИО
+                        # именно оттуда, а не служебные значения ImportContactsRequest.
                         row.update(telegram_status="present", check_note=f"Найдено через {Path(account).name}; сообщение не отправлялось", telegram_user_id=str(user.id), telegram_username=getattr(user, "username", "") or "", telegram_first_name=getattr(user, "first_name", "") or "", telegram_last_name=getattr(user, "last_name", "") or "", telegram_bio=about or "", telegram_avatar_present="yes" if avatar_url else "no", telegram_avatar_path=avatar_url, telegram_avatar_error=avatar_error)
                         result["present"] += 1
                     else:
